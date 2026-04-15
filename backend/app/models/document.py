@@ -16,6 +16,6 @@ class Document(Base):
     type_fichier = Column(Text, nullable=False)
     tags = Column(ARRAY(Text))
     contenu = Column(Text, nullable=False)
-    search_vector = Column(TSVECTOR) 
-
+    storage_fichier = Column(Text, nullable=False, unique=True)
+    search_vector = Column(TSVECTOR)
 

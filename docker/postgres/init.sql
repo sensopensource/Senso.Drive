@@ -18,6 +18,7 @@ CREATE TABLE documents (
     type_fichier TEXT NOT NULL,
     tags TEXT[],
     contenu TEXT NOT NULL,
+    storage_fichier TEXT NOT NULL UNIQUE,
     search_vector TSVECTOR   );
 
 CREATE INDEX idx_documents_search_vector

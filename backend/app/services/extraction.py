@@ -1,0 +1,30 @@
+from pypdf import PdfReader
+from docx import Document as DocxDocument 
+from io import BytesIO 
+
+#fonction qui extrait le text dun pdf
+def extract_pdf(file_bytes: bytes) -> str:
+    reader = PdfReader(BytesIO(file_bytes))
+    text= ""
+    for page in reader.pages:
+        text+=page.extract_text() + "\n"
+    return text
+
+#fonction qui extrait le text dun word
+def extract_docx(file_bytes: bytes) -> str:
+    doc = DocxDocument(BytesIO(file_bytes))
+    text = ""
+    for paragraph in doc.paragraph:
+        text += paragraph +"\n"
+    return text 
+
+
+#fonction qui choisi le type d'extraction selon le type du fichier
+def extract_text(filename: str,file_bytes: bytes) -> str:
+    if filename.lower().endswith("pdf"):
+        return extract_pdf(file_bytes)
+    elif filename.lower().endswith("docx"):
+        return extact_docx(file_bytes)
+    else:
+        raise ValueError(f"Fromat du fichier {filename} n'est pas supporte")
+

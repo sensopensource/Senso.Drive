@@ -19,10 +19,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app/app 
+      - ./backend/app:/app/app
+      - documents_data:/app/storage/documents
 
 
 
 volumes:
   postgres_data:
-  
+  documents_data:
+

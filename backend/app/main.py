@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from app.database import SessionLocal
 from sqlalchemy import text 
+from app.routers import documents
 
 app = FastAPI()
+app.include_router(documents.router)
 
 @app.get("/health")
 def health():
@@ -16,3 +18,4 @@ def db_check():
         return {"db": "connected", "result": result}
     finally:
         db.close()
+
