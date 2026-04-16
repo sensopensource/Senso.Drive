@@ -4,11 +4,12 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.models.document import Document
-from app.schemas.document import DocumentCreate
+from app.models.documents import Document
+from app.models.versions import Version
+from app.schemas.document import DocumentCreate,DocumentReadDetail
 from app.services.extraction import extract_text
 
-STORAGE_DIR = Path("/app/storage/documents")
+STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
 
 
 def _save_binary(filename: str, file_bytes: bytes) -> tuple[str, str]:
@@ -25,24 +26,78 @@ def create(
     metadata: DocumentCreate,
     filename: str,
     file_bytes: bytes,
+    id_utilisateur: int,
+    id_categorie: int,
 ) -> Document:
-    
     contenu = extract_text(filename, file_bytes)
     storage_fichier, type_fichier = _save_binary(filename, file_bytes)
 
     document = Document(
         titre=metadata.titre or filename,
         auteur=metadata.auteur,
-        tags=metadata.tags,
-        type_fichier=type_fichier,
-        contenu=contenu,
-        storage_fichier=storage_fichier,
+        id_utilisateur=id_utilisateur,
+        id_categorie=id_categorie,
     )
     db.add(document)
+    db.flush()
+
+    version = Version(
+        numero=1,
+        contenu=contenu,
+        storage_fichier=storage_fichier,
+        type_fichier=type_fichier,
+        id_document=document.id,
+    )
+    db.add(version)
     db.commit()
     db.refresh(document)
     return document
 
 
-def get_file_path(document: Document) -> Path:
-    return STORAGE_DIR / document.storage_fichier
+def get_file_path(version: Version) -> Path:
+    return STORAGE_DIR / version.storage_fichier
+
+
+def get_latest_version(db: Session, document_id: int) -> Version | None:
+    return (
+        db.query(Version)
+        .filter(Version.id_document == document_id)
+        .order_by(Version.numero.desc())
+        .first()
+    )
+
+
+def list_documents(db: Session, id_utilisateur: int, page: int = 1, size: int = 20) -> list[Document]:
+    offset = (page - 1) * size
+    return (
+        db.query(Document)
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .order_by(Document.date_creation.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+
+def get_document(db: Session, document_id: int) -> Document | None:
+    return db.query(Document).filter(Document.id == document_id).first()
+
+def get_document_detail(db: Session, document_id: int) -> DocumentReadDetail | None:
+    document= get_document(db,document_id)
+    if not document:
+        return None
+    version = get_latest_version(db,document_id)
+    
+     
+    document_detail = DocumentReadDetail(
+       id = document.id,
+       titre = document.titre,
+       auteur = document.auteur,
+       date_creation=document.date_creation,
+       type_fichier=version.type_fichier,
+       date_upload=version.date_upload,
+       apercu_contenu=version.contenu[:500],
+       resume_llm=version.resume_llm,
+       numero_version=version.numero    )
+    
+    return document_detail

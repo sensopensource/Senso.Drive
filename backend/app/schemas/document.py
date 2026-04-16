@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict
 class DocumentCreate(BaseModel):
     titre: str | None = None
     auteur: str | None = None
-    tags: list[str] | None = None
 
 
 class DocumentRead(BaseModel):
@@ -14,9 +13,14 @@ class DocumentRead(BaseModel):
     id: int
     titre: str
     auteur: str | None = None
-    date_upload: datetime
-    type_fichier: str
-    tags: list[str] | None = None
+    date_creation: datetime
+
 
 class DocumentReadDetail(DocumentRead):
-    appercu_contenu: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+    type_fichier: str | None = None
+    date_upload: datetime | None = None
+    apercu_contenu: str | None = None
+    resume_llm: str | None = None
+    numero_version: int | None = None

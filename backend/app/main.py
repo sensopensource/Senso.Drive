@@ -8,7 +8,7 @@ app.include_router(documents.router)
 
 @app.get("/health")
 def health():
-    return {"Status", "ok"}
+    return {"status": "ok"}
 
 @app.get("/db-check")
 def db_check():
