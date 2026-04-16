@@ -34,10 +34,30 @@ classDiagram
         +int document_id
         +int numero
         +string contenu
+        +string resume [nullable]
         +string storage_fichier
         +string type_fichier
         +tsvector search_vector
         +datetime date_upload
+    }
+
+    class Anomalie {
+        +int id
+        +string code
+        +int utilisateur_id
+        +string ip_address
+        +string description
+        +string severite
+        +datetime date_detection
+    }
+
+    class Log {
+        +int id
+        +int utilisateur_id
+        +string action
+        +string details
+        +string ip_address
+        +datetime date_action
     }
 
     class Tag {
@@ -60,6 +80,8 @@ classDiagram
 
     Utilisateur "1" --> "*" Document : possede
     Utilisateur "1" --> "*" HistoriqueRecherche : effectue
+    Utilisateur "1" --> "*" Anomalie : declenche
+    Utilisateur "1" --> "*" Log : genere
     Categorie "1" --> "*" Document : contient
     Categorie "0..1" --> "*" Categorie : parent
     Document "1" --> "1..*" Version : a
@@ -99,10 +121,30 @@ erDiagram
         int document_id FK
         int numero
         string contenu
+        string resume "nullable, genere par LLM"
         string storage_fichier UK
         string type_fichier
         tsvector search_vector
         datetime date_upload
+    }
+
+    ANOMALIE {
+        int id PK
+        string code
+        int utilisateur_id FK
+        string ip_address
+        string description
+        string severite
+        datetime date_detection
+    }
+
+    LOG {
+        int id PK
+        int utilisateur_id FK
+        string action
+        string details
+        string ip_address
+        datetime date_action
     }
 
     TAG {
@@ -125,6 +167,8 @@ erDiagram
 
     UTILISATEUR ||--o{ DOCUMENT : "possede"
     UTILISATEUR ||--o{ HISTORIQUE_RECHERCHE : "effectue"
+    UTILISATEUR ||--o{ ANOMALIE : "declenche"
+    UTILISATEUR ||--o{ LOG : "genere"
     CATEGORIE ||--o{ DOCUMENT : "contient"
     CATEGORIE |o--o{ CATEGORIE : "sous-categorie de"
     DOCUMENT ||--|{ VERSION : "a"
