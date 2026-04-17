@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch
 from app.services import document_service
-
+from fastapi.responses import FileResponse
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 # TODO: id_utilisateur et id_categorie sont en dur pour l'instant
@@ -68,7 +68,7 @@ def patch_document(document_id: int,document: DocumentPatch,db: Session= Depends
     return nouveau_document
 
 
-@router.delete("/{document_id}",)
+@router.delete("/{document_id}")
 def delete_document(document_id:int,
                     db: Session= Depends(get_db)):
     
@@ -76,3 +76,11 @@ def delete_document(document_id:int,
         return {"message": "document supprime avec succes"}
     else:
         raise HTTPException(status_code=404,detail="Document non trouve")
+    
+@router.get("/{document_id}/download")
+def download_document(document_id: int,
+                      db: Session = Depends(get_db)):
+       fichier = document_service.download_document_latest_version(db=db,document_id=document_id)
+       if not fichier:
+            raise HTTPException(status_code=404,detail="Document non trouve")
+       return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)

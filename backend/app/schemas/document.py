@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
+from pathlib import Path
 
 
 class DocumentCreate(BaseModel):
@@ -30,3 +31,8 @@ class DocumentReadDetail(DocumentRead):
     apercu_contenu: str | None = None
     resume_llm: str | None = None
     numero_version: int | None = None
+
+class DocumentDownload(BaseModel):
+    path: Path 
+    filename : str
+    media_type: str

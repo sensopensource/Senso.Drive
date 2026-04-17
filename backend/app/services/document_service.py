@@ -6,10 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.models.documents import Document
 from app.models.versions import Version
-from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead
+from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload
 from app.services.extraction import extract_text
 
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
+
+##MAPPING HTTP 
+MIME_TYPES = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
 
 
 def _save_binary(filename: str, file_bytes: bytes) -> tuple[str, str]:
@@ -124,4 +130,12 @@ def delete_document(db: Session,document_id: int) -> str | bool:
     db.commit()
     return True
     
+def download_document_latest_version(db: Session,document_id:int) -> DocumentDownload | None:
+    document= get_document(db=db,document_id=document_id)
+    if not document:
+        return None
+    version = get_latest_version(db=db,document_id=document_id)
+    filaname_= f"{document.titre}.v{version.numero}.{version.type_fichier}"
+    fichier = DocumentDownload(path=STORAGE_DIR / version.storage_fichier,filename=filaname_,media_type=MIME_TYPES[version.type_fichier])
 
+    return fichier
