@@ -66,3 +66,13 @@ def patch_document(document_id: int,document: DocumentPatch,db: Session= Depends
     if not nouveau_document:
         raise HTTPException(status_code=404,detail="Modification impossible")
     return nouveau_document
+
+
+@router.delete("/{document_id}",)
+def delete_document(document_id:int,
+                    db: Session= Depends(get_db)):
+    
+    if document_service.delete_document(db=db,document_id=document_id):
+        return {"message": "document supprime avec succes"}
+    else:
+        raise HTTPException(status_code=404,detail="Document non trouve")

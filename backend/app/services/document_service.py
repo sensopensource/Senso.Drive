@@ -113,3 +113,15 @@ def patch_document(db: Session,document_id: int,auteur: str | None = None,titre:
     db.commit()
     db.refresh(document)
     return document
+
+
+def delete_document(db: Session,document_id: int) -> str | bool:
+
+    document = get_document(db=db,document_id=document_id)
+    if not document:
+        return False
+    db.delete(document)
+    db.commit()
+    return True
+    
+
