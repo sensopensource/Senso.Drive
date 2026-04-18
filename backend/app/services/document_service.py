@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.models.documents import Document
 from app.models.versions import Version
@@ -139,3 +140,19 @@ def download_document_latest_version(db: Session,document_id:int) -> DocumentDow
     fichier = DocumentDownload(path=STORAGE_DIR / version.storage_fichier,filename=filaname,media_type=MIME_TYPES[version.type_fichier])
 
     return fichier
+
+def search_documents(db: Session,query: str,id_utilisateur: int,page: int = 1,size: int = 20,) -> list[Document]:
+    tsquery = func.websearch_to_tsquery('french_unaccent', query)
+    rank = func.ts_rank_cd(Version.search_vector, tsquery)
+    offset = (page - 1) * size
+
+    return (
+        db.query(Document)
+        .join(Version, Version.id_document == Document.id)
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .filter(Version.search_vector.op('@@')(tsquery))
+        .order_by(rank.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )

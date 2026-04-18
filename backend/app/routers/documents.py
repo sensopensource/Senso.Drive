@@ -46,6 +46,23 @@ def list_documents(
     )
     return documents
 
+@router.get("/search",response_model=list[DocumentRead])
+def search_document(query: str = Query(...,min_length=1),
+                    page: int = Query(1,ge=1),
+                    size: int = Query(20,ge=20,le=100),
+                    db: Session = Depends(get_db)):
+    id_utilisateur=TEMP_USER_ID
+    resulats = document_service.search_documents(db=db,
+                                                 query=query,
+                                                 id_utilisateur=id_utilisateur,
+                                                 page=page,
+                                                 size=size)
+    return resulats
+    
+    
+
+
+
 
 @router.get("/{document_id}", response_model=DocumentReadDetail)
 def get_document(document_id: int, db: Session = Depends(get_db)):
@@ -86,3 +103,5 @@ def download_document(document_id: int,
        if not fichier:
             raise HTTPException(status_code=404,detail="Document non trouve")
        return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)
+
+
