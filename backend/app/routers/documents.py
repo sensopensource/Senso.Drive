@@ -8,9 +8,7 @@ from app.core.dependencies import get_current_user
 from app.models import Utilisateur
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-# TODO: id_utilisateur et id_categorie sont en dur pour l'instant
-# je vais les rendres dynamiques quand l'auth et les categories seront kaynin
-TEMP_USER_ID = 1
+
 TEMP_CATEGORIE_ID = 1
 
 # lutilisaateur envoie une requette HTTP avec ContentType multipart pr le pdf,cest pour ca qu'on passe par File() et Form()
