@@ -1,34 +1,42 @@
-import { BrowserRouter,Routes,Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 import LoginPage from "./pages/LoginPage"
 import HomePage from "./pages/HomePage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import RegisterPage from "./pages/RegisterPage"
 import CategoriesPage from "./pages/CategoriesPage"
+import DocumentsPage from "./pages/DocumentsPage"
 import { AuthProvider } from "./contexts/AuthContext"
-import { QueryClient,QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-const queryClient = new QueryClient
+const queryClient = new QueryClient()
 
 function App() {
-
   return (
     <QueryClientProvider client={queryClient}>
-     <AuthProvider>
-       <BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
           <Routes>
-            <Route path="/register" element={<RegisterPage/>}/>
-            <Route path="/login" element={<LoginPage/>}/>
-            <Route path="/home" element={<ProtectedRoute>
-                                        <HomePage/>
-                                     </ProtectedRoute>}/>
-            <Route path="/Categories" element={<ProtectedRoute>
-                                              <CategoriesPage/>
-                                          </ProtectedRoute>}/>
-        
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/home" element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <CategoriesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/documents" element={
+              <ProtectedRoute>
+                <DocumentsPage />
+              </ProtectedRoute>
+            } />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-   </QueryClientProvider> 
+    </QueryClientProvider>
   )
 }
 
