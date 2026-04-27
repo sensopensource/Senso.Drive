@@ -17,6 +17,7 @@ class DocumentRead(BaseModel):
     titre: str
     auteur: str | None = None
     date_creation: datetime
+    type_fichier: str | None = None
 
 class DocumentPatch(BaseModel):
    

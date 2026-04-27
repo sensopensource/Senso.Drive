@@ -2,7 +2,7 @@ import os
 import uuid
 from pathlib import Path
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,selectinload
 from sqlalchemy import func,or_
 
 from app.models.documents import Document
@@ -18,6 +18,16 @@ MIME_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
+
+def _to_document_read(document: Document, version: Version | None) -> DocumentRead:
+    return DocumentRead(
+        id=document.id,
+        titre=document.titre,
+        auteur=document.auteur,
+        date_creation=document.date_creation,
+        type_fichier=version.type_fichier if version else None,
+    )
+
 
 
 def _save_binary(filename: str, file_bytes: bytes) -> tuple[str, str]:
@@ -36,7 +46,7 @@ def create(
     file_bytes: bytes,
     id_utilisateur: int,
     id_categorie: int,
-) -> Document:
+) -> DocumentRead:
     contenu = extract_text(filename, file_bytes)
     storage_fichier, type_fichier = _save_binary(filename, file_bytes)
 
@@ -59,7 +69,10 @@ def create(
     db.add(version)
     db.commit()
     db.refresh(document)
-    return document
+    v = get_latest_version(db=db,
+                           document_id=document.id)
+
+    return _to_document_read(document,v)
 
 
 def get_file_path(version: Version) -> Path:
@@ -75,16 +88,29 @@ def get_latest_version(db: Session, document_id: int) -> Version | None:
     )
 
 
-def list_documents(db: Session, id_utilisateur: int, page: int = 1, size: int = 20) -> list[Document]:
-    offset = (page - 1) * size
-    return (
-        db.query(Document)
-        .filter(Document.id_utilisateur == id_utilisateur)
-        .order_by(Document.date_creation.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
+def list_documents(db: Session,
+                   id_utilisateur: int,
+                   page: int=1,
+                   size:  int=20) -> list[DocumentRead]:
+    offset=(page -1 )*size
+    
+    documents = (db.query(Document)
+                 .options(selectinload(Document.versions))
+                 .filter(Document.id_utilisateur==id_utilisateur)
+                 .order_by(Document.date_creation.desc())
+                 .offset(offset)
+                 .limit(size)
+                 .all())
+                 
+    
+    results = []
+    
+    for doc in documents:
+        latest = max(doc.versions,key=lambda v:v.numero) if doc.versions else None
+
+        results.append(_to_document_read(document=doc,version=latest))
+
+    return results
 
 
 def get_document(db: Session,
@@ -131,7 +157,9 @@ def patch_document(db: Session,
         document.titre=titre
     db.commit()
     db.refresh(document)
-    return document
+    v = get_latest_version(db=db,document_id=document.id)
+
+    return _to_document_read(document,v)
 
 
 def delete_document(db: Session,
@@ -244,4 +272,5 @@ def search_document_fallback(db: Session,
         )
         resultats.append(resultat)
     return resultats
+
 
