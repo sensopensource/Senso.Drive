@@ -1,13 +1,23 @@
-import { useState, type FormEvent, type ChangeEvent } from "react"
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { useToast } from "../contexts/ToastContext"
 import type { LoginResponse } from "../types"
 
 
 function LoginPage() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [email, setEmail] = useState<string>('')
   const [mdp, setMdp] = useState<string>('')
   const [logError, setLogError] = useState<string>('')
+
+  // Au montage : si on arrive ici via un 401 (session expiree), on affiche un toast
+  useEffect(() => {
+    if (sessionStorage.getItem('session_expired') === '1') {
+      sessionStorage.removeItem('session_expired')
+      showToast('Session expirée, veuillez vous reconnecter', 'info')
+    }
+  }, [showToast])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

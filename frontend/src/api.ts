@@ -21,6 +21,8 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
   if (response.status === 401) {
     localStorage.removeItem('token')
+    // On stocke un flag pour que LoginPage affiche un toast de session expiree
+    sessionStorage.setItem('session_expired', '1')
     window.location.href = '/login'
   }
 

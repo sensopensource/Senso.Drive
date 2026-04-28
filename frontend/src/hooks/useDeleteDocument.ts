@@ -1,8 +1,10 @@
 import { apiFetch } from "../api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useToast } from "../contexts/ToastContext"
 
 export function useDeleteDocument() {
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const mutation = useMutation({
     mutationFn: async (id: number) => {
@@ -16,6 +18,10 @@ export function useDeleteDocument() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
+      showToast("Document supprimé", 'success')
+    },
+    onError: (error) => {
+      showToast(error.message, 'error')
     },
   })
 

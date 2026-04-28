@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useState, type ChangeEvent } from "react"
 import { useDocument } from "../hooks/useDocument"
 import { useDeleteDocument } from "../hooks/useDeleteDocument"
+import { useUpdateDocument } from "../hooks/useUpdateDocument"
 
 type Props = {
   documentId: number | null
@@ -24,7 +25,36 @@ const TYPE_ICONS: Record<string, string> = {
 function DocumentDetailPanel({ documentId, onClose }: Props) {
   const { document, isLoading, error } = useDocument(documentId)
   const { deleteDocument, isPending } = useDeleteDocument()
+  const { updateDocument } = useUpdateDocument()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [editTitre, setEditTitre] = useState(false)
+  const [titreValue, setTitreValue] = useState('')
+
+  const handleStartEdit = () => {
+    if (!document) return
+    setTitreValue(document.titre)
+    setEditTitre(true)
+  }
+
+  const handleSaveTitre = () => {
+    if (!documentId || !titreValue.trim()) {
+      setEditTitre(false)
+      return
+    }
+    if (titreValue.trim() === document?.titre) {
+      // Pas de changement, on ferme juste
+      setEditTitre(false)
+      return
+    }
+    updateDocument(
+      { id: documentId, titre: titreValue.trim() },
+      { onSuccess: () => setEditTitre(false) }
+    )
+  }
+
+  const handleCancelEdit = () => {
+    setEditTitre(false)
+  }
 
   const handleDelete = () => {
     if (!documentId) return
@@ -126,9 +156,46 @@ function DocumentDetailPanel({ documentId, onClose }: Props) {
                   {typeIcon}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-display text-xl text-fg-1 break-words">
-                    {document.titre}
-                  </h2>
+
+                  {editTitre ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={titreValue}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setTitreValue(e.target.value)}
+                        autoFocus
+                        className="flex-1 bg-base border border-border text-fg-1 px-2 py-1 text-sm font-body focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={handleSaveTitre}
+                        className="text-fg-1 hover:text-primary transition-colors"
+                        aria-label="Valider"
+                      >
+                        <span className="material-symbols-outlined text-base">check</span>
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-fg-3 hover:text-fg-1 transition-colors"
+                        aria-label="Annuler"
+                      >
+                        <span className="material-symbols-outlined text-base">close</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 group">
+                      <h2 className="font-display text-xl text-fg-1 break-words flex-1">
+                        {document.titre}
+                      </h2>
+                      <button
+                        onClick={handleStartEdit}
+                        className="text-fg-3 hover:text-fg-1 opacity-0 group-hover:opacity-100 transition-opacity mt-1"
+                        aria-label="Renommer"
+                      >
+                        <span className="material-symbols-outlined text-base">edit</span>
+                      </button>
+                    </div>
+                  )}
+
                   {document.auteur && (
                     <p className="font-mono text-xs text-fg-3 mt-1">
                       {document.auteur}

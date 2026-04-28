@@ -1,5 +1,6 @@
 import { apiFetch } from "../api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useToast } from "../contexts/ToastContext"
 import type { Document } from "../types"
 
 type UploadParams = {
@@ -11,6 +12,7 @@ type UploadParams = {
 
 export function useUploadDocument() {
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const mutation = useMutation({
     mutationFn: async ({ file, titre, auteur, id_categorie }: UploadParams) => {
@@ -34,8 +36,12 @@ export function useUploadDocument() {
 
       return response.json() as Promise<Document>
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
+      showToast(`Document "${data.titre}" uploadé`, 'success')
+    },
+    onError: (error) => {
+      showToast(error.message, 'error')
     },
   })
 
