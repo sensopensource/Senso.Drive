@@ -5,6 +5,7 @@ from app.schemas.categorie import CategorieCreate,CategorieRead
 from app.services import categorie_service
 from sqlalchemy.orm import Session
 from app.database import get_db
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/categories",tags=["categories"])
 
@@ -37,3 +38,14 @@ def modifier_categorie(id_categorie: int,
                                                   nom=nom,
                                                   id_utilisateur=current_user.id)
     return categorie
+    
+@router.delete("/{id_categorie}")
+def delete_categorie(id_categorie:int,
+                    db: Session= Depends(get_db),
+                    current_user: Utilisateur = Depends(get_current_user)):
+    if not categorie_service.delete_categorie(db=db,
+                                            id_categorie=id_categorie,
+                                            id_utilisateur=current_user.id):
+        raise HTTPException(status_code=404,detail="categorie non trouve")
+    else:
+        return {"message": "categorie supprime avec succes"}

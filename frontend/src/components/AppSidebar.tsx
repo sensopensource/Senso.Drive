@@ -20,7 +20,7 @@ function NavItem({ to, icon, label }: NavItemProps) {
         }`
       }
     >
-      <span className="material-symbols-outlined text-base">{icon}</span>
+      <span className="material-symbols-outlined text-base text-fg-3">{icon}</span>
       <span className="font-body text-sm">{label}</span>
     </NavLink>
   )

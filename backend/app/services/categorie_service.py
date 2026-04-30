@@ -63,5 +63,16 @@ def patch_categorie(db: Session,
     db.commit()
     return categorie
 
+def delete_categorie(db: Session,
+                    id_categorie: int,
+                    id_utilisateur: int) -> bool:
+
+    categorie = db.query(Categorie).filter(Categorie.id==id_categorie).filter(Categorie.id_utilisateur==id_utilisateur).first()
+    if not categorie:
+        return False
+    db.delete(categorie)
+    db.commit()
+    return True
+
 
     

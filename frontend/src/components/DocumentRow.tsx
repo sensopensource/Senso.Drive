@@ -29,7 +29,7 @@ function DocumentRow({ document, onClick, extrait }: Props) {
   return (
     <li
       onClick={onClick}
-      className="flex items-start gap-4 px-4 py-3 hover:bg-surface-2 transition-colors cursor-pointer"
+      className="flex items-center justify-between gap-4 px-3 py-2 hover:bg-surface-2 transition-colors cursor-pointer"
     >
 
       {/* Icône colorée selon le type */}
