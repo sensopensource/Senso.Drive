@@ -1,7 +1,11 @@
-import { useState, type ChangeEvent } from "react"
+import { useState, useRef, useEffect, type ChangeEvent, type KeyboardEvent } from "react"
 import { useDocument } from "../hooks/useDocument"
 import { useDeleteDocument } from "../hooks/useDeleteDocument"
 import { useUpdateDocument } from "../hooks/useUpdateDocument"
+import { useTags } from "../hooks/useTags"
+import { useCreateTag } from "../hooks/useCreateTag"
+import { useUpdateDocumentTags } from "../hooks/useUpdateDocumentTags"
+import { TagChip } from "./TagChip"
 
 type Props = {
   documentId: number | null
@@ -26,9 +30,31 @@ function DocumentDetailPanel({ documentId, onClose }: Props) {
   const { document, isLoading, error } = useDocument(documentId)
   const { deleteDocument, isPending } = useDeleteDocument()
   const { updateDocument } = useUpdateDocument()
+  const { data: allTags } = useTags()
+  const { mutate: createTag, isPending: isCreatingTag } = useCreateTag()
+  const { mutate: updateDocumentTags } = useUpdateDocumentTags(documentId || 0)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [editTitre, setEditTitre] = useState(false)
   const [titreValue, setTitreValue] = useState('')
+  const [tagInput, setTagInput] = useState('')
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const tagPickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showTagSuggestions) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tagPickerRef.current && !tagPickerRef.current.contains(e.target as Node)) {
+        setShowTagSuggestions(false)
+      }
+    }
+    window.document.addEventListener('mousedown', handleClickOutside)
+    return () => window.document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTagSuggestions])
+
+  useEffect(() => {
+    setHighlightedIndex(0)
+  }, [tagInput])
 
   const handleStartEdit = () => {
     if (!document) return
@@ -88,6 +114,74 @@ function DocumentDetailPanel({ documentId, onClose }: Props) {
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleAddTag = (tagId: number) => {
+    if (!document) return
+    const currentTagIds = document.tags.map(t => t.id)
+    if (!currentTagIds.includes(tagId)) {
+      updateDocumentTags([...currentTagIds, tagId])
+    }
+    setTagInput('')
+    setShowTagSuggestions(false)
+  }
+
+  const handleRemoveTag = (tagId: number) => {
+    if (!document) return
+    const currentTagIds = document.tags.map(t => t.id).filter(id => id !== tagId)
+    updateDocumentTags(currentTagIds)
+  }
+
+  const handleCreateAndAddTag = () => {
+    const name = tagInput.trim()
+    if (!name || isCreatingTag) return
+    createTag(name, {
+      onSuccess: (newTag) => {
+        if (!document) return
+        const currentTagIds = document.tags.map(t => t.id)
+        if (!currentTagIds.includes(newTag.id)) {
+          updateDocumentTags([...currentTagIds, newTag.id])
+        }
+        setTagInput('')
+        setShowTagSuggestions(false)
+      }
+    })
+  }
+
+  const filteredSuggestions = (allTags || []).filter(
+    tag => tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+           !document?.tags.some(t => t.id === tag.id)
+  ).slice(0, 6)
+
+  const exactMatch = filteredSuggestions.find(
+    t => t.name.toLowerCase() === tagInput.trim().toLowerCase()
+  )
+  const canCreate = tagInput.trim().length > 0 && !exactMatch
+
+  const handleTagInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setShowTagSuggestions(false)
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const max = filteredSuggestions.length + (canCreate ? 1 : 0) - 1
+      setHighlightedIndex(i => Math.min(i + 1, max))
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedIndex(i => Math.max(i - 1, 0))
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (highlightedIndex < filteredSuggestions.length) {
+        handleAddTag(filteredSuggestions[highlightedIndex].id)
+      } else if (canCreate) {
+        handleCreateAndAddTag()
+      }
+    }
   }
 
   // Format de la date en YYYY-MM-DD HH:MM (style design system)
@@ -221,6 +315,77 @@ function DocumentDetailPanel({ documentId, onClose }: Props) {
                 <div className="flex justify-between font-mono text-xs">
                   <span className="text-fg-3 uppercase tracking-wider">Uploadé le</span>
                   <span className="text-fg-2">{formatDate(document.date_upload)}</span>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div className="mb-6">
+                <div className="font-mono text-xs uppercase tracking-wider text-fg-3 mb-3">
+                  Tags
+                </div>
+
+                {/* Liste des tags courants */}
+                {document.tags && document.tags.length > 0 && (
+                  <div className="flex gap-1.5 mb-3 flex-wrap">
+                    {document.tags.map((tag) => (
+                      <TagChip
+                        key={tag.id}
+                        tag={tag}
+                        removable
+                        onRemove={() => handleRemoveTag(tag.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Input pour ajouter un tag */}
+                <div className="relative" ref={tagPickerRef}>
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onFocus={() => setShowTagSuggestions(true)}
+                    onKeyDown={handleTagInputKeyDown}
+                    disabled={isCreatingTag}
+                    placeholder="Ajouter un tag..."
+                    className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary disabled:opacity-60"
+                  />
+
+                  {showTagSuggestions && (filteredSuggestions.length > 0 || canCreate) && (
+                    <div className="absolute top-full left-0 right-0 bg-surface-2 border border-border mt-1 z-50">
+                      {filteredSuggestions.map((tag, idx) => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onMouseEnter={() => setHighlightedIndex(idx)}
+                          onClick={() => handleAddTag(tag.id)}
+                          className={`w-full text-left px-3 py-2 text-sm font-body text-fg-1 flex items-center gap-2 transition-colors ${
+                            highlightedIndex === idx ? 'bg-surface-3' : ''
+                          }`}
+                        >
+                          <span
+                            className="w-2 h-2 inline-block"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          {tag.name}
+                        </button>
+                      ))}
+
+                      {canCreate && (
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHighlightedIndex(filteredSuggestions.length)}
+                          onClick={handleCreateAndAddTag}
+                          disabled={isCreatingTag}
+                          className={`w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-wider text-fg-2 border-t border-border transition-colors disabled:opacity-50 ${
+                            highlightedIndex === filteredSuggestions.length ? 'bg-surface-3 text-fg-1' : ''
+                          }`}
+                        >
+                          {isCreatingTag ? 'Création…' : `+ Créer "${tagInput.trim()}"`}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

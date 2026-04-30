@@ -1,4 +1,5 @@
 import type { Document } from "../types"
+import { TagChip } from "./TagChip"
 
 type Props = {
   document: Document
@@ -37,7 +38,7 @@ function DocumentRow({ document, onClick, extrait }: Props) {
         {config.icon}
       </span>
 
-      {/* Titre + auteur ou extrait */}
+      {/* Titre + auteur ou extrait + tags */}
       <div className="flex-1 min-w-0">
         <div className="font-body text-sm text-fg-1 truncate">
           {document.titre}
@@ -55,6 +56,20 @@ function DocumentRow({ document, onClick, extrait }: Props) {
               {document.auteur}
             </div>
           )
+        )}
+
+        {/* Tags */}
+        {document.tags && document.tags.length > 0 && (
+          <div className="flex gap-1.5 mt-2 flex-wrap">
+            {document.tags.slice(0, 3).map((tag) => (
+              <TagChip key={tag.id} tag={tag} />
+            ))}
+            {document.tags.length > 3 && (
+              <span className="text-xs text-fg-3 font-body">
+                +{document.tags.length - 3}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

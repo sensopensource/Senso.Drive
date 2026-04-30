@@ -21,12 +21,20 @@ export type Categorie = {
     nom: string
 }
 
+export type Tag = {
+    id: number
+    name: string
+    color: string
+    created_at: string
+}
+
 export type Document = {
     id: number
     titre: string
     auteur: string | null
     date_creation: string  // ISO string venant du back
     type_fichier: string | null  // "pdf" | "docx" | "txt" | "md" | null
+    tags: Tag[]
 }
 
 // Pour GET /documents/{id} — inclut les champs supplementaires du detail

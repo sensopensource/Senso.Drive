@@ -6,6 +6,10 @@ class TagCreate(BaseModel):
     name: str
 
 
+class DocumentTagsUpdate(BaseModel):
+    tag_ids: list[int]
+
+
 class TagRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

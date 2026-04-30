@@ -9,7 +9,7 @@ from app.database import get_db
 router = APIRouter(prefix="/tags", tags=["tags"])
 
 
-@router.get("")
+@router.get("/")
 def list_tags(
     current_user: Utilisateur = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -17,7 +17,7 @@ def list_tags(
     return tag_service.list_tags(db=db, id_utilisateur=current_user.id)
 
 
-@router.post("")
+@router.post("/")
 def create_tag(
     tag_create: TagCreate,
     current_user: Utilisateur = Depends(get_current_user),
@@ -32,5 +32,6 @@ def delete_tag(
     current_user: Utilisateur = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    tag_service.delete_tag(db=db, id_tag=id_tag, id_utilisateur=current_user.id)
+    if not tag_service.delete_tag(db=db, id_tag=id_tag, id_utilisateur=current_user.id):
+        raise HTTPException(status_code=404, detail="Tag non trouve")
     return {"message": "tag supprime avec succes"}

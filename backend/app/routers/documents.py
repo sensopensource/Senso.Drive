@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Q
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse
+from app.schemas.tag import DocumentTagsUpdate
 from app.services import document_service, categorie_service, tag_service
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
@@ -137,13 +138,13 @@ def download_document(document_id: int,
 
 @router.patch("/{document_id}/tags", response_model=DocumentRead)
 def assign_tags_to_document(document_id: int,
-                           tag_ids: list[int],
+                           payload: DocumentTagsUpdate,
                            db: Session = Depends(get_db),
                            current_user: Utilisateur = Depends(get_current_user)):
     document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     if not document:
         raise HTTPException(status_code=404, detail="Document non trouve")
 
-    tag_service.assign_tags_to_document(db=db, id_document=document_id, tag_ids=tag_ids, id_utilisateur=current_user.id)
+    tag_service.assign_tags_to_document(db=db, id_document=document_id, tag_ids=payload.tag_ids, id_utilisateur=current_user.id)
     updated_document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     return updated_document

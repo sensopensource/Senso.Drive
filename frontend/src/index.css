@@ -1,43 +1,54 @@
 @import "tailwindcss";
 
-/* ─── DESIGN TOKENS — Senso Drive ────────────────────────────
+/* ─── DESIGN TOKENS — Senso.Drive ────────────────────────────
    Tokens du design system disponibles comme variables CSS
    (utilisables via var(--name) dans le CSS classique)
    ET comme classes Tailwind (via le bloc @theme plus bas).
 */
 :root {
-  /* ─── BACKGROUNDS ─────────────────────────────── */
+  /* ─── LEGACY (toujours utilisé par les anciens composants) ── */
   --bg-base:        #08090b;
   --bg-surface-1:   #0f1014;
   --bg-surface-2:   #161820;
   --bg-surface-3:   #1c1f2e;
   --bg-overlay:     rgba(8, 9, 11, 0.75);
 
-  /* ─── BORDERS ─────────────────────────────────── */
   --border-color:   #1e2030;
   --border-subtle:  #141620;
   --border-focus:   #ffffff;
   --border-danger:  #c0392b;
 
-  /* ─── FOREGROUND / TEXT ───────────────────────── */
   --fg-1:           #e8eaf0;
   --fg-2:           #8b90a0;
   --fg-3:           #4a4f60;
   --fg-inverse:     #08090b;
 
-  /* ─── INTERACTIVE ─────────────────────────────── */
   --color-primary-raw:  #ffffff;
   --color-danger-raw:   #c0392b;
   --color-success-raw:  #1e7a4a;
   --color-ai-raw:       #6b4dff;
 
-  /* ─── FILE-TYPE ACCENTS ───────────────────────── */
   --accent-pdf:     #ff6b5b;
   --accent-docx:    #4db8ff;
   --accent-txt:     #4edd8a;
   --accent-md:      #ffd166;
 
-  /* ─── SPACING ─────────────────────────────────── */
+  /* ─── NOUVELLE PALETTE Senso.Drive ─────────────────────────── */
+  --ink:      #0b0b0c;
+  --panel:    #0f0f10;
+  --elev:     #141416;
+  --line:     #1d1d20;
+  --line2:    #262629;
+  --mute:     #6b6b70;
+  --soft:     #9a9aa0;
+  --bright:   #e7e7ea;
+
+  --type-pdf:   #c96a6a;
+  --type-docx:  #6a8fc9;
+  --type-txt:   #6ac98a;
+  --type-md:    #c9a76a;
+  --type-ai:    #a89cd6;
+
   --space-1:   4px;
   --space-2:   8px;
   --space-3:  12px;
@@ -46,7 +57,6 @@
   --space-8:  32px;
   --space-12: 48px;
 
-  /* ─── ANIMATION ───────────────────────────────── */
   --ease-out:    cubic-bezier(0.2, 0, 0, 1);
   --duration-sm: 150ms;
   --duration-md: 200ms;
@@ -55,38 +65,49 @@
 
 /* ─── CONFIG TAILWIND v4 ──────────────────────────────────────
    Tout ce qui est dans @theme est exposé comme classes Tailwind.
-   Tailwind v4 attend des prefixes specifiques :
-   - --color-*  → genere les classes bg-*, text-*, border-*, etc.
-   - --font-*   → genere font-*
+   - --color-*  → bg-*, text-*, border-*
+   - --font-*   → font-*
 */
 @theme {
-  /* Couleurs — surfaces */
+  /* Couleurs — surfaces (legacy, conservé pour compat) */
   --color-base: #08090b;
   --color-surface-1: #0f1014;
   --color-surface-2: #161820;
   --color-surface-3: #1c1f2e;
 
-  /* Couleurs — texte */
   --color-fg-1: #e8eaf0;
   --color-fg-2: #8b90a0;
   --color-fg-3: #4a4f60;
   --color-fg-inverse: #08090b;
 
-  /* Couleurs — bordures */
   --color-border: #1e2030;
   --color-border-subtle: #141620;
 
-  /* Couleurs — interactives */
   --color-primary: #ffffff;
   --color-danger: #c0392b;
   --color-success: #1e7a4a;
   --color-ai: #6b4dff;
 
-  /* Couleurs — accents par type de fichier */
   --color-pdf: #ff6b5b;
   --color-docx: #4db8ff;
   --color-txt: #4edd8a;
   --color-md: #ffd166;
+
+  /* ─── Senso.Drive palette (nouvelles classes Tailwind) ────── */
+  --color-ink:    #0b0b0c;
+  --color-panel:  #0f0f10;
+  --color-elev:   #141416;
+  --color-line:   #1d1d20;
+  --color-line2:  #262629;
+  --color-mute:   #6b6b70;
+  --color-soft:   #9a9aa0;
+  --color-bright: #e7e7ea;
+
+  --color-type-pdf:  #c96a6a;
+  --color-type-docx: #6a8fc9;
+  --color-type-txt:  #6ac98a;
+  --color-type-md:   #c9a76a;
+  --color-type-ai:   #a89cd6;
 
   /* Polices */
   --font-display: "Space Grotesk", "Helvetica Neue", sans-serif;
@@ -95,18 +116,133 @@
 }
 
 /* ─── BASE ──────────────────────────────────────────────────── */
+html, body {
+  background: var(--ink);
+}
 body {
-  background: var(--bg-base);
-  color: var(--fg-1);
+  color: var(--bright);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
 }
 
-/* ─── OVERRIDE AUTOFILL NAVIGATEUR ──────────────────────────── */
+/* ─── MATERIAL SYMBOLS ─────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20;
+}
+
+/* ─── HAIRLINES 0.5px (signature Senso.Drive) ─────────────── */
+.hair-b { border-bottom: 0.5px solid var(--line); }
+.hair-t { border-top:    0.5px solid var(--line); }
+.hair-l { border-left:   0.5px solid var(--line); }
+.hair-r { border-right:  0.5px solid var(--line); }
+.hair   { border:        0.5px solid var(--line); }
+
+/* ─── BACKGROUNDS — grille subtile + bruit ────────────────── */
+.grid-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: 0 0;
+}
+.noise::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ─── SCROLLBAR ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line2); }
+::-webkit-scrollbar-thumb:hover { background: #38383d; }
+
+/* ─── ROWS — table dense Senso.Drive ──────────────────────── */
+.row { position: relative; background: #0d0d0f; }
+.row-alt { position: relative; background: #101013; }
+.row:hover, .row-alt:hover { background: #16161a; }
+
+/* Sideline 2px par type (PDF, DOCX, TXT, MD) */
+.row::before, .row-alt::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: transparent;
+}
+.type-pdf::before  { background: var(--type-pdf); }
+.type-docx::before { background: var(--type-docx); }
+.type-txt::before  { background: var(--type-txt); }
+.type-md::before   { background: var(--type-md); }
+
+.row-selected { background: #1a1a1e !important; }
+.row-selected::before { background: var(--bright) !important; width: 2px; }
+
+/* ─── DOTS de type (sidebar, métadonnées) ─────────────────── */
+.type-dot { width: 5px; height: 5px; display: inline-block; }
+
+/* ─── LABELS de section (mono uppercase 10px) ─────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+/* ─── BOUTONS ─────────────────────────────────────────────── */
+.btn-ghost {
+  font-size: 12px;
+  color: var(--soft);
+  padding: 6px 10px;
+  border: 0.5px solid var(--line);
+  transition: all 120ms ease;
+  background: transparent;
+}
+.btn-ghost:hover {
+  color: var(--bright);
+  border-color: #38383d;
+  background: var(--elev);
+}
+.btn-primary {
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bright);
+  padding: 6px 12px;
+  font-weight: 600;
+  transition: all 120ms ease;
+}
+.btn-primary:hover { background: #ffffff; }
+
+/* ─── KBD shortcuts ───────────────────────────────────────── */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 0.5px solid var(--line2);
+  background: var(--panel);
+  color: var(--soft);
+}
+kbd.on-light {
+  background: rgba(11, 11, 12, 0.08);
+  border-color: rgba(11, 11, 12, 0.15);
+  color: rgba(11, 11, 12, 0.6);
+}
+
+/* ─── INPUTS — reset focus par défaut ─────────────────────── */
+input:focus { outline: none; box-shadow: none; }
+
+/* ─── DETAIL PANEL (scroll stable) ────────────────────────── */
+.detail-scroll { scrollbar-gutter: stable; }
+
+/* ─── OVERRIDE AUTOFILL NAVIGATEUR ────────────────────────── */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 30px var(--bg-surface-1) inset !important;
-  -webkit-text-fill-color: var(--fg-1) !important;
-  caret-color: var(--fg-1) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--panel) inset !important;
+  -webkit-text-fill-color: var(--bright) !important;
+  caret-color: var(--bright) !important;
 }
