@@ -77,8 +77,11 @@ CREATE TABLE logs(
 
 CREATE TABLE tags(
     id SERIAL PRIMARY KEY,
-    nom TEXT NOT NULL UNIQUE
-
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    id_utilisateur int NOT NULL REFERENCES utilisateurs(id),
+    CONSTRAINT unique_tag_name_user UNIQUE (name, id_utilisateur)
 );
 
 CREATE TABLE documents_tags(

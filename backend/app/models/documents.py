@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
 from app.database import Base
-from sqlalchemy.sql import func 
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from app.models.tags import documents_tags
 
 
 class Document(Base):
@@ -19,4 +20,10 @@ class Document(Base):
     back_populates="document",
     cascade="all,delete-orphan"
 
+    )
+
+    tags = relationship(
+        "Tag",
+        secondary=documents_tags,
+        back_populates="documents"
     )

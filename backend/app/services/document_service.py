@@ -105,7 +105,7 @@ def list_documents(db: Session,
 
     # La page demandee
     documents = (base_query
-                 .options(selectinload(Document.versions))
+                 .options(selectinload(Document.versions), selectinload(Document.tags))
                  .order_by(Document.date_creation.desc())
                  .offset(offset)
                  .limit(size)
@@ -127,7 +127,13 @@ def list_documents(db: Session,
 def get_document(db: Session,
                  document_id: int,
                  id_utilisateur: int) -> Document | None:
-    return db.query(Document).filter(Document.id == document_id).filter(Document.id_utilisateur==id_utilisateur).first()
+    return (
+        db.query(Document)
+        .options(selectinload(Document.tags), selectinload(Document.versions))
+        .filter(Document.id == document_id)
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .first()
+    )
 
 def get_document_detail(db: Session,
                         document_id: int,

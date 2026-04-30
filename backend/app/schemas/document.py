@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from pathlib import Path
+from app.schemas.tag import TagRead
 
 
 class DocumentCreate(BaseModel):
@@ -18,6 +19,7 @@ class DocumentRead(BaseModel):
     auteur: str | None = None
     date_creation: datetime
     type_fichier: str | None = None
+    tags: list[TagRead] = []
 
 class DocumentPatch(BaseModel):
    
@@ -32,6 +34,7 @@ class DocumentReadDetail(DocumentRead):
     apercu_contenu: str | None = None
     resume_llm: str | None = None
     numero_version: int | None = None
+    tags: list[TagRead] = []
 
 class DocumentDownload(BaseModel):
     path: Path
