@@ -4,6 +4,7 @@ import { useDocuments } from "../hooks/useDocuments"
 import { useSearchDocuments } from "../hooks/useSearchDocuments"
 import { useDebounce } from "../hooks/useDebounce"
 import { useCategories } from "../hooks/useCategories"
+import { useUpdateDocument } from "../hooks/useUpdateDocument"
 import { useSearch } from "../contexts/SearchContext"
 import { getAncestors, getDirectChildren } from "../lib/categoriesTree"
 import DocumentsTable from "../components/DocumentsTable"
@@ -28,7 +29,8 @@ function DocumentsPage() {
   const { query: searchQuery } = useSearch()
   const debouncedQuery = useDebounce(searchQuery, 300)
 
-  const { categories } = useCategories()
+  const { categories, updateCategorie } = useCategories()
+  const { updateDocument } = useUpdateDocument()
   const { documents, total, isLoading: isLoadingAll, error: errorAll } = useDocuments(page, SIZE, filterCategorie)
   const { results, isLoading: isLoadingSearch, error: errorSearch } = useSearchDocuments(debouncedQuery)
 
@@ -70,6 +72,27 @@ function DocumentsPage() {
     const next = new URLSearchParams(searchParams)
     next.set('cat', String(id))
     setSearchParams(next)
+  }
+
+  const handleDropOnFolder = (
+    payload: { kind: 'doc' | 'folder'; id: number },
+    targetCategorieId: number,
+  ) => {
+    if (payload.kind === 'doc') {
+      const targetNom = categories.find(c => c.id === targetCategorieId)?.nom ?? '?'
+      updateDocument({
+        id: payload.id,
+        id_categorie: targetCategorieId,
+        successMessage: `Document déplacé dans "${targetNom}"`,
+      })
+    } else if (payload.kind === 'folder') {
+      if (payload.id === targetCategorieId) return
+      updateCategorie({
+        id: payload.id,
+        id_parent: targetCategorieId,
+        updateParent: true,
+      })
+    }
   }
 
   const goToRoot = () => {
@@ -200,6 +223,7 @@ function DocumentsPage() {
               isSearchMode={isSearchMode}
               subFolders={subFolders}
               onOpenFolder={handleOpenFolder}
+              onDropOnFolder={handleDropOnFolder}
             />
           )}
 

@@ -3,7 +3,9 @@ import { NavLink, useNavigate, useSearchParams } from "react-router-dom"
 import { useCategories } from "../hooks/useCategories"
 import { useDeleteCategorie } from "../hooks/useDeleteCategorie"
 import { useDocuments } from "../hooks/useDocuments"
+import { useUpdateDocument } from "../hooks/useUpdateDocument"
 import { buildTree } from "../lib/categoriesTree"
+import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "../lib/dnd"
 import type { CategorieNode } from "../types"
 import NewCategorieModal from "./NewCategorieModal"
 
@@ -20,6 +22,7 @@ function CategorieTreeNode({
   onAddChild,
   onRename,
   onDelete,
+  onDrop,
   colorIdx,
 }: {
   node: CategorieNode
@@ -30,6 +33,7 @@ function CategorieTreeNode({
   onAddChild: (parent: CategorieNode) => void
   onRename: (id: number, newNom: string) => void
   onDelete: (node: CategorieNode) => void
+  onDrop: (payload: DndPayload, targetId: number) => void
   colorIdx: number
 }) {
   const isOpen = expanded.has(node.id)
@@ -39,7 +43,26 @@ function CategorieTreeNode({
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(node.nom)
+  const [isDragOver, setIsDragOver] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isDndDragging(e) || editing) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!isDragOver) setIsDragOver(true)
+  }
+
+  const handleDragLeave = () => setIsDragOver(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const payload = getDndPayload(e)
+    if (!payload) return
+    if (payload.kind === 'folder' && payload.id === node.id) return
+    onDrop(payload, node.id)
+  }
 
   useEffect(() => {
     if (!menuOpen) return
@@ -80,8 +103,15 @@ function CategorieTreeNode({
     <div>
       <div
         onClick={() => !editing && onSelect(node.id)}
+        draggable={!editing}
+        onDragStart={(e) => setDndPayload(e, { kind: 'folder', id: node.id })}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`group flex items-center gap-1 px-2 py-1.5 text-[12.5px] transition-colors ${
           editing ? 'bg-elev' : ''
+        } ${
+          isDragOver ? 'outline outline-1 outline-bright -outline-offset-1' : ''
         } ${
           !editing && isSelected ? 'text-bright bg-elev cursor-pointer' :
           !editing ? 'text-soft hover:text-bright hover:bg-elev cursor-pointer' :
@@ -189,6 +219,7 @@ function CategorieTreeNode({
               onAddChild={onAddChild}
               onRename={onRename}
               onDelete={onDelete}
+              onDrop={onDrop}
               colorIdx={colorIdx + idx + 1}
             />
           ))}
@@ -202,11 +233,13 @@ function AppSidebar() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { categories, updateCategorie } = useCategories()
+  const { updateDocument } = useUpdateDocument()
   const { deleteCategorie, isPending: isDeleting } = useDeleteCategorie()
   const { total: totalDocs } = useDocuments(1, 1, null)
   const [newCatTarget, setNewCatTarget] = useState<NewCatTarget>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
+  const [rootDragOver, setRootDragOver] = useState(false)
 
   const tree = useMemo(() => buildTree(categories), [categories])
 
@@ -237,6 +270,44 @@ function AppSidebar() {
     deleteCategorie(confirmDelete.id, {
       onSuccess: () => setConfirmDelete(null),
     })
+  }
+
+  const handleDrop = (payload: DndPayload, targetCategorieId: number) => {
+    if (payload.kind === 'doc') {
+      const targetNom = categories.find(c => c.id === targetCategorieId)?.nom ?? '?'
+      updateDocument({
+        id: payload.id,
+        id_categorie: targetCategorieId,
+        successMessage: `Document déplacé dans "${targetNom}"`,
+      })
+    } else if (payload.kind === 'folder') {
+      if (payload.id === targetCategorieId) return
+      updateCategorie({
+        id: payload.id,
+        id_parent: targetCategorieId,
+        updateParent: true,
+      })
+    }
+  }
+
+  // Drop sur "Tous mes documents" = remonter un dossier a la racine
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setRootDragOver(false)
+    const payload = getDndPayload(e)
+    if (!payload || payload.kind !== 'folder') return
+    updateCategorie({
+      id: payload.id,
+      id_parent: null,
+      updateParent: true,
+    })
+  }
+
+  const handleRootDragOver = (e: React.DragEvent) => {
+    if (!isDndDragging(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!rootDragOver) setRootDragOver(true)
   }
 
   return (
@@ -270,8 +341,13 @@ function AppSidebar() {
           <NavLink
             to="/documents"
             end
+            onDragOver={handleRootDragOver}
+            onDragLeave={() => setRootDragOver(false)}
+            onDrop={handleRootDrop}
             className={({ isActive }) =>
               `flex items-center gap-2 px-2 py-1.5 text-[12.5px] transition-colors ${
+                rootDragOver ? 'outline outline-1 outline-bright -outline-offset-1' : ''
+              } ${
                 isActive && selectedCatId == null ? 'text-bright bg-elev' : 'text-soft hover:text-bright hover:bg-elev'
               }`
             }
@@ -322,6 +398,7 @@ function AppSidebar() {
               onAddChild={(parent) => setNewCatTarget({ parentId: parent.id, parentNom: parent.nom })}
               onRename={handleRename}
               onDelete={(node) => setConfirmDelete(node)}
+              onDrop={handleDrop}
               colorIdx={idx}
             />
           ))}
