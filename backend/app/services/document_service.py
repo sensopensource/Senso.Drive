@@ -13,6 +13,8 @@ from app.models.categories import Categorie
 from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse
 from app.services.extraction import extract_text
 from app.models.utilisateurs import Utilisateur
+from app.services import llm_service
+
 
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
 
@@ -310,3 +312,20 @@ def search_document_fallback(db: Session,
     return resultats
 
 
+def analyser_document(db: Session, document_id: int, id_utilisateur: int):
+    document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    if not document:
+        return None
+
+    version = db.query(Version).filter(
+        Version.id_document == document_id
+    ).order_by(Version.numero.desc()).first()
+
+    if not version:
+        return None
+
+    resume = llm_service.generer_resume(version.contenu)
+    version.resume_llm = resume
+    db.commit()
+    db.refresh(version)
+    return resume

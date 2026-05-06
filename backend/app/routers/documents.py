@@ -149,3 +149,15 @@ def assign_tags_to_document(document_id: int,
     tag_service.assign_tags_to_document(db=db, id_document=document_id, tag_ids=payload.tag_ids, id_utilisateur=current_user.id)
     updated_document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     return updated_document
+
+@router.post("/{document_id}/analyser")
+def analyser_document(document_id: int,
+                      db: Session = Depends(get_db),
+                      current_user: Utilisateur = Depends(get_current_user)):
+
+    resume = document_service.analyser_document(db=db,
+                                                document_id=document_id,
+                                                id_utilisateur=current_user.id)
+    if resume is None:
+        raise HTTPException(status_code=404, detail="Document ou version introuvable")
+    return {"resume_llm": resume}
