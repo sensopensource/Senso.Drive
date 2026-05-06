@@ -6,6 +6,8 @@ import { useTags } from "../hooks/useTags"
 import { useCreateTag } from "../hooks/useCreateTag"
 import { useUpdateDocumentTags } from "../hooks/useUpdateDocumentTags"
 import { useCategories } from "../hooks/useCategories"
+import { useAnalyserDocument } from "../hooks/useAnalyserDocument"
+import  ReactMarkdown from 'react-markdown'
 
 type Props = {
   documentId: number
@@ -36,6 +38,7 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
   const { data: allTags } = useTags()
   const { mutate: createTag, isPending: isCreatingTag } = useCreateTag()
   const { mutate: updateDocumentTags } = useUpdateDocumentTags(documentId)
+  const { mutate: analyserDocument, isPending: isAnalysing } = useAnalyserDocument(documentId)
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [editTitre, setEditTitre] = useState(false)
@@ -346,12 +349,29 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                   <span className="material-symbols-outlined text-[12px] text-type-ai">auto_awesome</span>
                   <span>Résumé IA</span>
                 </div>
-                <button className="font-mono text-[10px] text-mute hover:text-bright cursor-not-allowed opacity-60" disabled>
-                  bientôt
-                </button>
+                <button
+                   onClick={() => analyserDocument()}
+                   disabled={isAnalysing}
+                   className="btn-ghost flex items-center 
+                              gap-1.5
+                              disabled:opacity-40">
+                    {isAnalysing ? 'Analyse…' : document.resume_llm ? 'Re-analyser' : 'Analyser'}
+                  </button>
+
               </div>
               {document.resume_llm ? (
-                <p className="text-[12.5px] text-soft leading-[1.65]">{document.resume_llm}</p>
+                <ReactMarkdown
+                    components={{
+                    p: ({ children }) => <p className="text-[12.5px] text-soft leading-[1.65] mb-2">{children}</p>,
+                    h1: ({ children }) => <h2 className="text-[13px] text-bright font-semibold mb-2 mt-3">{children}</h2>,
+                    h2: ({ children }) => <h2 className="text-[13px] text-bright font-semibold mb-2 mt-3">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-[12px] text-bright font-medium mb-1 mt-2">{children}</h3>,
+                    ul: ({ children }) => <ul className="list-disc list-inside text-[12.5px] text-soft space-y-1 mb-2">{children}</ul>,
+                    li: ({ children }) => <li className="leading-[1.65]">{children}</li>,
+                    strong: ({ children }) => <strong className="text-bright font-semibold">{children}</strong>,}}>
+                   {document.resume_llm}
+                </ReactMarkdown>
+
               ) : (
                 <p className="text-[12px] text-mute italic">Aucun résumé pour ce document.</p>
               )}
