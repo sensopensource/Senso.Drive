@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse
+from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.tag import DocumentTagsUpdate
 from app.services import document_service, categorie_service, tag_service
 from app.models.categories import Categorie
@@ -137,6 +137,26 @@ def download_document(document_id: int,
        return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)
 
 
+@router.post("/{document_id}/versions", response_model=DocumentRead)
+async def upload_nouvelle_version(
+    document_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Utilisateur = Depends(get_current_user),
+):
+    file_bytes = await file.read()
+    document = document_service.add_version(
+        db=db,
+        document_id=document_id,
+        id_utilisateur=current_user.id,
+        filename=file.filename,
+        file_bytes=file_bytes,
+    )
+    if not document:
+        raise HTTPException(status_code=404, detail="Document introuvable")
+    return document
+
+
 @router.patch("/{document_id}/tags", response_model=DocumentRead)
 def assign_tags_to_document(document_id: int,
                            payload: DocumentTagsUpdate,
@@ -160,4 +180,44 @@ def analyser_document(document_id: int,
                                                 id_utilisateur=current_user.id)
     if resume is None:
         raise HTTPException(status_code=404, detail="Document ou version introuvable")
+    return {"resume_llm": resume}
+
+
+@router.get("/{document_id}/versions", response_model=list[VersionRead])
+def list_versions(document_id: int,
+                  db: Session = Depends(get_db),
+                  current_user: Utilisateur = Depends(get_current_user)):
+    versions = document_service.list_versions(db=db,
+                                              document_id=document_id,
+                                              id_utilisateur=current_user.id)
+    if versions is None:
+        raise HTTPException(status_code=404, detail="Document introuvable")
+    return versions
+
+
+@router.get("/{document_id}/versions/{numero}/download")
+def download_version(document_id: int,
+                     numero: int,
+                     db: Session = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_current_user)):
+    fichier = document_service.download_version(db=db,
+                                                document_id=document_id,
+                                                numero=numero,
+                                                id_utilisateur=current_user.id)
+    if not fichier:
+        raise HTTPException(status_code=404, detail="Version introuvable")
+    return FileResponse(path=fichier.path, filename=fichier.filename, media_type=fichier.media_type)
+
+
+@router.post("/{document_id}/versions/{numero}/analyser")
+def analyser_version(document_id: int,
+                     numero: int,
+                     db: Session = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_current_user)):
+    resume = document_service.analyser_version(db=db,
+                                               document_id=document_id,
+                                               numero=numero,
+                                               id_utilisateur=current_user.id)
+    if resume is None:
+        raise HTTPException(status_code=404, detail="Version introuvable")
     return {"resume_llm": resume}

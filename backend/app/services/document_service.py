@@ -10,7 +10,7 @@ from fastapi import HTTPException
 from app.models.documents import Document
 from app.models.versions import Version
 from app.models.categories import Categorie
-from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse
+from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.services.extraction import extract_text
 from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
@@ -310,6 +310,113 @@ def search_document_fallback(db: Session,
         )
         resultats.append(resultat)
     return resultats
+
+
+def add_version(
+    db: Session,
+    document_id: int,
+    id_utilisateur: int,
+    filename: str,
+    file_bytes: bytes,
+) -> DocumentRead | None:
+    document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    if not document:
+        return None
+
+    latest = get_latest_version(db=db, document_id=document_id)
+    nouveau_numero = (latest.numero + 1) if latest else 1
+
+    contenu = extract_text(filename, file_bytes)
+    storage_fichier, type_fichier = _save_binary(filename, file_bytes)
+
+    version = Version(
+        numero=nouveau_numero,
+        contenu=contenu,
+        storage_fichier=storage_fichier,
+        type_fichier=type_fichier,
+        id_document=document_id,
+    )
+    db.add(version)
+    db.commit()
+    db.refresh(document)
+
+    return _to_document_read(document, version)
+
+
+def list_versions(db: Session, document_id: int, id_utilisateur: int) -> list[VersionRead] | None:
+    document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    if not document:
+        return None
+
+    versions = (
+        db.query(Version)
+        .filter(Version.id_document == document_id)
+        .order_by(Version.numero.desc())
+        .all()
+    )
+
+    return [
+        VersionRead(
+            id=v.id,
+            numero=v.numero,
+            type_fichier=v.type_fichier,
+            date_upload=v.date_upload,
+            resume_llm=v.resume_llm,
+            apercu_contenu=v.contenu[:500] if v.contenu else None,
+        )
+        for v in versions
+    ]
+
+
+def download_version(
+    db: Session,
+    document_id: int,
+    numero: int,
+    id_utilisateur: int,
+) -> DocumentDownload | None:
+    document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    if not document:
+        return None
+
+    version = (
+        db.query(Version)
+        .filter(Version.id_document == document_id, Version.numero == numero)
+        .first()
+    )
+    if not version:
+        return None
+
+    filename = f"{document.titre}.v{version.numero}.{version.type_fichier}"
+    return DocumentDownload(
+        path=STORAGE_DIR / version.storage_fichier,
+        filename=filename,
+        media_type=MIME_TYPES[version.type_fichier],
+    )
+
+
+def analyser_version(
+    db: Session,
+    document_id: int,
+    numero: int,
+    id_utilisateur: int,
+) -> str | None:
+    document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    if not document:
+        return None
+
+    version = (
+        db.query(Version)
+        .filter(Version.id_document == document_id, Version.numero == numero)
+        .first()
+    )
+    if not version:
+        return None
+
+    resume = llm_service.generer_resume(version.contenu)
+    version.resume_llm = resume
+    db.commit()
+    db.refresh(version)
+    return resume
 
 
 def analyser_document(db: Session, document_id: int, id_utilisateur: int):

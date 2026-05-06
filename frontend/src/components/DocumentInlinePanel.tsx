@@ -7,6 +7,8 @@ import { useCreateTag } from "../hooks/useCreateTag"
 import { useUpdateDocumentTags } from "../hooks/useUpdateDocumentTags"
 import { useCategories } from "../hooks/useCategories"
 import { useAnalyserDocument } from "../hooks/useAnalyserDocument"
+import { useAddVersion } from "../hooks/useAddVersion"
+import { useVersions } from "../hooks/useVersions"
 import  ReactMarkdown from 'react-markdown'
 
 type Props = {
@@ -39,6 +41,23 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
   const { mutate: createTag, isPending: isCreatingTag } = useCreateTag()
   const { mutate: updateDocumentTags } = useUpdateDocumentTags(documentId)
   const { mutate: analyserDocument, isPending: isAnalysing } = useAnalyserDocument(documentId)
+  const { mutate: addVersion, isPending: isUploading } = useAddVersion(documentId)
+  const { versions } = useVersions(documentId)
+  const versionInputRef = useRef<HTMLInputElement>(null)
+  const [selectedVersionNumero, setSelectedVersionNumero] = useState<number | null>(null)
+
+  const latestVersion = versions[0]
+  const displayedVersion = selectedVersionNumero != null
+    ? versions.find(v => v.numero === selectedVersionNumero) ?? latestVersion
+    : latestVersion
+  const isViewingArchived = displayedVersion && latestVersion && displayedVersion.numero !== latestVersion.numero
+
+  const handleVersionChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    addVersion(file)
+    e.target.value = ''
+  }
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [editTitre, setEditTitre] = useState(false)
@@ -120,7 +139,10 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
 
   const handleDownload = async () => {
     const token = localStorage.getItem('token')
-    const response = await fetch(`http://localhost:8000/documents/${documentId}/download`, {
+    const url = displayedVersion && isViewingArchived
+      ? `http://localhost:8000/documents/${documentId}/versions/${displayedVersion.numero}/download`
+      : `http://localhost:8000/documents/${documentId}/download`
+    const response = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
     if (!response.ok) return
@@ -128,12 +150,12 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
     const match = disposition.match(/filename="?([^";]+)"?/)
     const filename = match ? match[1] : `document-${documentId}`
     const blob = await response.blob()
-    const url = URL.createObjectURL(blob)
+    const blobUrl = URL.createObjectURL(blob)
     const a = window.document.createElement('a')
-    a.href = url
+    a.href = blobUrl
     a.download = filename
     a.click()
-    URL.revokeObjectURL(url)
+    URL.revokeObjectURL(blobUrl)
   }
 
   const handleAddTag = (tagId: number) => {
@@ -311,12 +333,27 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
               <span className="material-symbols-outlined text-[15px]">edit</span>
             </button>
             <button
+              onClick={() => versionInputRef.current?.click()}
+              disabled={isUploading}
+              className="btn-ghost flex items-center justify-center w-9 h-[30px] disabled:opacity-40"
+              title="Mettre à jour"
+            >
+              <span className="material-symbols-outlined text-[15px]">{isUploading ? 'hourglass_empty' : 'upload'}</span>
+            </button>
+            <button
               onClick={() => setConfirmDelete(true)}
               className="btn-ghost flex items-center justify-center w-9 h-[30px] hover:!text-danger"
               title="Supprimer"
             >
               <span className="material-symbols-outlined text-[15px]">delete</span>
             </button>
+            <input
+              ref={versionInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              className="hidden"
+              onChange={handleVersionChange}
+            />
           </div>
 
           {/* Confirm delete bar */}
@@ -342,24 +379,40 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto detail-scroll">
 
+            {/* Archived banner */}
+            {isViewingArchived && displayedVersion && (
+              <div className="px-5 py-2.5 bg-elev hair-b flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-[14px] text-type-md">history</span>
+                  <span className="text-[11.5px] text-soft">
+                    Vous explorez <span className="font-mono text-bright">v{displayedVersion.numero}</span> — version archivée
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedVersionNumero(null)}
+                  className="font-mono text-[10px] uppercase tracking-wider text-mute hover:text-bright transition-colors shrink-0"
+                >
+                  Revenir à l'actuelle
+                </button>
+              </div>
+            )}
+
             {/* AI summary */}
             <div className="px-5 py-4 hair-b">
               <div className="flex items-center justify-between mb-3">
                 <div className="section-label flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[12px] text-type-ai">auto_awesome</span>
-                  <span>Résumé IA</span>
+                  <span>Résumé IA{isViewingArchived && displayedVersion ? ` · v${displayedVersion.numero}` : ''}</span>
                 </div>
                 <button
-                   onClick={() => analyserDocument()}
+                   onClick={() => analyserDocument(isViewingArchived && displayedVersion ? displayedVersion.numero : undefined)}
                    disabled={isAnalysing}
-                   className="btn-ghost flex items-center 
-                              gap-1.5
-                              disabled:opacity-40">
-                    {isAnalysing ? 'Analyse…' : document.resume_llm ? 'Re-analyser' : 'Analyser'}
+                   className="btn-ghost flex items-center gap-1.5 disabled:opacity-40">
+                    {isAnalysing ? 'Analyse…' : displayedVersion?.resume_llm ? 'Re-analyser' : 'Analyser'}
                   </button>
 
               </div>
-              {document.resume_llm ? (
+              {displayedVersion?.resume_llm ? (
                 <ReactMarkdown
                     components={{
                     p: ({ children }) => <p className="text-[12.5px] text-soft leading-[1.65] mb-2">{children}</p>,
@@ -369,12 +422,79 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                     ul: ({ children }) => <ul className="list-disc list-inside text-[12.5px] text-soft space-y-1 mb-2">{children}</ul>,
                     li: ({ children }) => <li className="leading-[1.65]">{children}</li>,
                     strong: ({ children }) => <strong className="text-bright font-semibold">{children}</strong>,}}>
-                   {document.resume_llm}
+                   {displayedVersion.resume_llm}
                 </ReactMarkdown>
 
               ) : (
-                <p className="text-[12px] text-mute italic">Aucun résumé pour ce document.</p>
+                <p className="text-[12px] text-mute italic">Aucun résumé pour cette version.</p>
               )}
+            </div>
+
+            {/* Content preview */}
+            {displayedVersion?.apercu_contenu && (
+              <div className="px-5 py-4 hair-b">
+                <div className="section-label mb-3">Aperçu{isViewingArchived && displayedVersion ? ` · v${displayedVersion.numero}` : ''}</div>
+                <div className="hair p-3 bg-ink/40 font-mono text-[10.5px] text-soft leading-[1.7] whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+                  {displayedVersion.apercu_contenu}
+                </div>
+              </div>
+            )}
+
+            {/* Versions timeline */}
+            <div className="px-5 py-4 hair-b">
+              <div className="flex items-center justify-between mb-4">
+                <div className="section-label">Historique</div>
+                <span className="font-mono text-[10px] text-mute">{versions.length} version{versions.length > 1 ? 's' : ''}</span>
+              </div>
+
+              <ol className="relative space-y-1">
+                {versions.length > 0 && (
+                  <span className="absolute left-[5px] top-2 bottom-2 w-px bg-line2" aria-hidden></span>
+                )}
+                {versions.map((v) => {
+                  const isLatest = latestVersion && v.numero === latestVersion.numero
+                  const isSelected = displayedVersion && v.numero === displayedVersion.numero
+                  return (
+                    <li key={v.id} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVersionNumero(isLatest ? null : v.numero)}
+                        className={`w-full text-left flex items-start gap-3 py-2.5 px-2 transition-all ${
+                          isSelected ? 'bg-elev hair' : 'hover:bg-elev/60 border-0.5 border-transparent'
+                        }`}
+                      >
+                        <div className="shrink-0 w-3 flex flex-col items-center pt-[5px] relative z-10">
+                          <span className={`w-[7px] h-[7px] ${
+                            isSelected ? 'bg-bright' : isLatest ? 'bg-soft' : 'bg-mute'
+                          }`}></span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`font-mono text-[11.5px] ${isSelected ? 'text-bright font-semibold' : isLatest ? 'text-bright' : 'text-soft'}`}>
+                              v{v.numero}
+                            </span>
+                            {isLatest && (
+                              <span className="font-mono text-[9.5px] uppercase tracking-wider text-type-txt">actuelle</span>
+                            )}
+                            <span className="font-mono text-[10px] text-mute ml-auto">{formatDateTime(v.date_upload)}</span>
+                          </div>
+                          {v.resume_llm ? (
+                            <p className="text-[11.5px] text-soft leading-[1.5] line-clamp-2">
+                              {v.resume_llm.replace(/[#*`_>-]/g, '').trim().slice(0, 140)}
+                            </p>
+                          ) : v.apercu_contenu ? (
+                            <p className="text-[11px] text-mute italic leading-[1.5] line-clamp-2">
+                              {v.apercu_contenu.slice(0, 140)}…
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-mute italic">Pas encore d'aperçu</p>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ol>
             </div>
 
             {/* Metadata */}
@@ -507,38 +627,6 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
               </div>
             </div>
 
-            {/* Versions (placeholder — branchera quand back exposera l'historique) */}
-            <div className="px-5 py-4 hair-b">
-              <div className="flex items-center justify-between mb-3">
-                <div className="section-label">Historique</div>
-                <span className="font-mono text-[10px] text-mute">v{document.numero_version ?? '?'}</span>
-              </div>
-              <ol className="relative space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="shrink-0 w-6 flex flex-col items-center pt-1">
-                    <span className="w-1.5 h-1.5 bg-bright"></span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12px] text-bright font-medium">v{document.numero_version ?? '?'}</span>
-                      <span className="font-mono text-[10px] text-mute">— actuelle</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-mute">{formatDateTime(document.date_upload)}</span>
-                  </div>
-                </li>
-              </ol>
-              <p className="text-[10.5px] text-mute italic mt-2">Multi-versions bientôt disponible.</p>
-            </div>
-
-            {/* Content preview */}
-            {document.apercu_contenu && (
-              <div className="px-5 py-4">
-                <div className="section-label mb-3">Aperçu</div>
-                <div className="hair p-3 bg-ink/40 font-mono text-[10.5px] text-soft leading-[1.7] whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-                  {document.apercu_contenu}
-                </div>
-              </div>
-            )}
           </div>
         </>
       )}

@@ -46,6 +46,15 @@ export type Document = {
     tags: Tag[]
 }
 
+export type Version = {
+    id: number
+    numero: number
+    type_fichier: string
+    date_upload: string
+    resume_llm: string | null
+    apercu_contenu: string | null
+}
+
 // Pour GET /documents/{id} — inclut les champs supplementaires du detail
 export type DocumentDetail = Document & {
     date_upload: string | null

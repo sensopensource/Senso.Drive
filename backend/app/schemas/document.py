@@ -38,6 +38,17 @@ class DocumentReadDetail(DocumentRead):
     numero_version: int | None = None
     tags: list[TagRead] = []
 
+class VersionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    numero: int
+    type_fichier: str
+    date_upload: datetime
+    resume_llm: str | None = None
+    apercu_contenu: str | None = None
+
+
 class DocumentDownload(BaseModel):
     path: Path
     filename : str
