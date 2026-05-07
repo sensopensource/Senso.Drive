@@ -12,8 +12,9 @@ class Document(Base):
     titre = Column(Text, nullable=False)
     auteur = Column(Text)
     date_creation = Column(DateTime(timezone=True), server_default= func.now())
-    id_utilisateur = Column(Integer,ForeignKey('utilisateurs.id'), nullable=False) 
-    id_categorie = Column(Integer,ForeignKey('categories.id'),nullable=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, default=None)
+    id_utilisateur = Column(Integer,ForeignKey('utilisateurs.id'), nullable=False)
+    id_categorie = Column(Integer,ForeignKey('categories.id'),nullable=True)
 
     versions = relationship(
     "Version",

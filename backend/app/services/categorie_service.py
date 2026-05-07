@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
+from datetime import datetime, timezone
 from fastapi import HTTPException
 
 from app.models.categories import Categorie
@@ -11,7 +12,13 @@ def list_categories(id_utilisateur: int,
                     db: Session) -> list[CategorieRead]:
     rows = (
         db.query(Categorie, func.count(Document.id).label("count"))
-        .outerjoin(Document, Document.id_categorie == Categorie.id)
+        .outerjoin(
+            Document,
+            and_(
+                Document.id_categorie == Categorie.id,
+                Document.deleted_at.is_(None),
+            ),
+        )
         .filter(Categorie.id_utilisateur == id_utilisateur)
         .group_by(Categorie.id)
         .order_by(Categorie.nom)
@@ -140,20 +147,25 @@ def delete_categorie(db: Session,
     ).first()
     if not categorie:
         return False
-    
-    # Move all documents in this category to default "Non classe" category
-    default_categorie = get_or_create_default_categorie(db, id_utilisateur)
+
+    # Soft-delete tous les documents de la categorie ET de ses descendants
+    descendant_ids = _get_descendant_ids(db, id_categorie, id_utilisateur)
+    all_categorie_ids = descendant_ids | {id_categorie}
+
+    now = datetime.now(timezone.utc)
     documents = db.query(Document).filter(
-        Document.id_categorie == id_categorie,
+        Document.id_categorie.in_(all_categorie_ids),
         Document.id_utilisateur == id_utilisateur,
+        Document.deleted_at.is_(None),
     ).all()
-    
+
     for doc in documents:
-        doc.id_categorie = default_categorie.id
-    
+        doc.deleted_at = now
+        doc.id_categorie = None
+
     db.commit()
-    
-    # Now delete the category (no more foreign key violations)
+
+    # Suppression effective de la categorie (CASCADE supprime les sous-categories)
     db.delete(categorie)
     db.commit()
     return True

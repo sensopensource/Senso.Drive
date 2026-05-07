@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session,selectinload
 from sqlalchemy import func,or_
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
@@ -103,7 +104,10 @@ def list_documents(db: Session,
     offset = (page - 1) * size
 
     # On construit la query de base avec le filtre user (et optionnellement categorie)
-    base_query = db.query(Document).filter(Document.id_utilisateur == id_utilisateur)
+    base_query = db.query(Document).filter(
+        Document.id_utilisateur == id_utilisateur,
+        Document.deleted_at.is_(None),
+    )
     if id_categorie is not None:
         base_query = base_query.filter(Document.id_categorie == id_categorie)
 
@@ -133,14 +137,17 @@ def list_documents(db: Session,
 
 def get_document(db: Session,
                  document_id: int,
-                 id_utilisateur: int) -> Document | None:
-    return (
+                 id_utilisateur: int,
+                 include_deleted: bool = False) -> Document | None:
+    query = (
         db.query(Document)
         .options(selectinload(Document.tags), selectinload(Document.versions))
         .filter(Document.id == document_id)
         .filter(Document.id_utilisateur == id_utilisateur)
-        .first()
     )
+    if not include_deleted:
+        query = query.filter(Document.deleted_at.is_(None))
+    return query.first()
 
 def get_document_detail(db: Session,
                         document_id: int,
@@ -209,9 +216,102 @@ def delete_document(db: Session,
                             id_utilisateur=id_utilisateur)
     if not document:
         return False
+    document.deleted_at = datetime.now(timezone.utc)
+    document.id_categorie = None
+    db.commit()
+    return True
+
+
+def list_corbeille(db: Session,
+                   id_utilisateur: int,
+                   page: int = 1,
+                   size: int = 20) -> DocumentListResponse:
+    offset = (page - 1) * size
+
+    base_query = db.query(Document).filter(
+        Document.id_utilisateur == id_utilisateur,
+        Document.deleted_at.is_not(None),
+    )
+
+    total = base_query.count()
+
+    documents = (base_query
+                 .options(selectinload(Document.versions), selectinload(Document.tags))
+                 .order_by(Document.deleted_at.desc())
+                 .offset(offset)
+                 .limit(size)
+                 .all())
+
+    items = []
+    for doc in documents:
+        latest = max(doc.versions, key=lambda v: v.numero) if doc.versions else None
+        items.append(_to_document_read(document=doc, version=latest))
+
+    return DocumentListResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+    )
+
+
+def restaurer_document(db: Session,
+                       document_id: int,
+                       id_utilisateur: int) -> bool:
+    document = get_document(db=db,
+                            document_id=document_id,
+                            id_utilisateur=id_utilisateur,
+                            include_deleted=True)
+    if not document or document.deleted_at is None:
+        return False
+    document.deleted_at = None
+    db.commit()
+    return True
+
+
+def delete_definitif(db: Session,
+                     document_id: int,
+                     id_utilisateur: int) -> bool:
+    document = get_document(db=db,
+                            document_id=document_id,
+                            id_utilisateur=id_utilisateur,
+                            include_deleted=True)
+    if not document:
+        return False
+
+    # Supprimer les fichiers physiques de toutes les versions
+    for version in document.versions:
+        chemin = STORAGE_DIR / version.storage_fichier
+        if chemin.exists():
+            chemin.unlink()
+
     db.delete(document)
     db.commit()
     return True
+
+
+def vider_corbeille(db: Session, id_utilisateur: int) -> int:
+    documents = (
+        db.query(Document)
+        .options(selectinload(Document.versions))
+        .filter(
+            Document.id_utilisateur == id_utilisateur,
+            Document.deleted_at.is_not(None),
+        )
+        .all()
+    )
+
+    count = 0
+    for document in documents:
+        for version in document.versions:
+            chemin = STORAGE_DIR / version.storage_fichier
+            if chemin.exists():
+                chemin.unlink()
+        db.delete(document)
+        count += 1
+
+    db.commit()
+    return count
     
 def download_document_latest_version(db: Session,
                                      document_id:int,
@@ -246,6 +346,7 @@ def search_documents(
         db.query(Document, func_extrait)
         .join(Version, Version.id_document == Document.id)
         .filter(Document.id_utilisateur == id_utilisateur)
+        .filter(Document.deleted_at.is_(None))
         .filter(Version.search_vector.op('@@')(tsquery))
         .order_by(rank.desc())
         .offset(offset)
@@ -294,6 +395,7 @@ def search_document_fallback(db: Session,
                 )
             )
             .filter(Document.id_utilisateur==id_utilisateur)
+            .filter(Document.deleted_at.is_(None))
             .order_by((score1+score2).desc())
             .offset(offset)
             .limit(size)

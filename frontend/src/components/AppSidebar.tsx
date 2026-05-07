@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useSearchParams } from "react-router-dom"
 import { useCategories } from "../hooks/useCategories"
 import { useDeleteCategorie } from "../hooks/useDeleteCategorie"
 import { useDocuments } from "../hooks/useDocuments"
+import { useCorbeille } from "../hooks/useCorbeille"
 import { useUpdateDocument } from "../hooks/useUpdateDocument"
 import { buildTree } from "../lib/categoriesTree"
 import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "../lib/dnd"
@@ -236,6 +237,7 @@ function AppSidebar() {
   const { updateDocument } = useUpdateDocument()
   const { deleteCategorie, isPending: isDeleting } = useDeleteCategorie()
   const { total: totalDocs } = useDocuments(1, 1, null)
+  const { total: totalCorbeille } = useCorbeille(1, 1)
   const [newCatTarget, setNewCatTarget] = useState<NewCatTarget>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
@@ -368,6 +370,21 @@ function AppSidebar() {
             <span className="material-symbols-outlined text-[15px] text-mute">space_dashboard</span>
             <span className="flex-1">Tableau de bord</span>
           </NavLink>
+
+          <NavLink
+            to="/corbeille"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-2 py-1.5 text-[12.5px] transition-colors ${
+                isActive ? 'text-bright bg-elev' : 'text-soft hover:text-bright hover:bg-elev'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-[15px] text-mute">delete_outline</span>
+            <span className="flex-1">Corbeille</span>
+            {totalCorbeille > 0 && (
+              <span className="font-mono text-[10px] text-mute">{totalCorbeille}</span>
+            )}
+          </NavLink>
         </div>
 
         {/* Arbre des dossiers */}
@@ -441,13 +458,13 @@ function AppSidebar() {
                 Supprimer "<span className="font-semibold">{confirmDelete.nom}</span>" ?
               </p>
               {confirmDelete.children.length > 0 ? (
-                <p className="text-[12px] text-danger">
-                  Cette action supprimera aussi {confirmDelete.children.length}{' '}
-                  {confirmDelete.children.length > 1 ? 'sous-dossiers' : 'sous-dossier'} et tous leurs documents.
+                <p className="text-[12px] text-soft">
+                  Le dossier, ses {confirmDelete.children.length}{' '}
+                  {confirmDelete.children.length > 1 ? 'sous-dossiers' : 'sous-dossier'} et tous leurs documents iront dans la corbeille.
                 </p>
               ) : confirmDelete.count > 0 ? (
                 <p className="text-[12px] text-soft">
-                  {confirmDelete.count} document{confirmDelete.count > 1 ? 's' : ''} dans ce dossier {confirmDelete.count > 1 ? 'seront orphelins' : 'sera orphelin'}.
+                  {confirmDelete.count} document{confirmDelete.count > 1 ? 's iront' : ' ira'} dans la corbeille.
                 </p>
               ) : (
                 <p className="text-[12px] text-mute italic">Le dossier est vide.</p>

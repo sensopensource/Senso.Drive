@@ -549,8 +549,12 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                   <dd className="text-bright font-mono text-[11px]">{formatDateTime(document.date_creation)}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-mute">Uploadé</dt>
-                  <dd className="text-bright font-mono text-[11px]">{formatDateTime(document.date_upload)}</dd>
+                  <dt className="text-mute">
+                    Uploadé{isViewingArchived && displayedVersion ? ` · v${displayedVersion.numero}` : ''}
+                  </dt>
+                  <dd className="text-bright font-mono text-[11px]">
+                    {formatDateTime(displayedVersion?.date_upload ?? document.date_upload)}
+                  </dd>
                 </div>
                 {document.auteur && (
                   <div className="flex items-start justify-between gap-4">

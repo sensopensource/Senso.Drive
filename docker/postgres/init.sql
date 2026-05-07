@@ -37,10 +37,13 @@ CREATE TABLE documents (
     titre TEXT NOT NULL,
     auteur TEXT,
     date_creation TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
     id_utilisateur int REFERENCES utilisateurs(id),
     id_categorie int REFERENCES categories(id)
-    
+
       );
+
+CREATE INDEX idx_documents_deleted_at ON documents(deleted_at);
 
 CREATE TABLE versions(
     id SERIAL PRIMARY KEY,
@@ -51,7 +54,7 @@ CREATE TABLE versions(
     search_vector tsvector,
     resume_LLM TEXT,
     date_upload TIMESTAMPTZ DEFAULT NOW(),
-    id_document int REFERENCES documents(id)
+    id_document int REFERENCES documents(id) ON DELETE CASCADE
 
 );
 
@@ -86,8 +89,8 @@ CREATE TABLE tags(
 );
 
 CREATE TABLE documents_tags(
-    id_document int REFERENCES documents(id),
-    id_tag int REFERENCES tags(id),
+    id_document int REFERENCES documents(id) ON DELETE CASCADE,
+    id_tag int REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY (id_document,id_tag)
 );
 

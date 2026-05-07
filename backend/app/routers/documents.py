@@ -51,6 +51,48 @@ async def upload_document(
     return document
 
 
+@router.get("/corbeille", response_model=DocumentListResponse)
+def list_corbeille(page: int = Query(1, ge=1),
+                   size: int = Query(20, ge=1, le=100),
+                   db: Session = Depends(get_db),
+                   current_user: Utilisateur = Depends(get_current_user)):
+    return document_service.list_corbeille(
+        db=db,
+        id_utilisateur=current_user.id,
+        page=page,
+        size=size,
+    )
+
+
+@router.delete("/corbeille")
+def vider_corbeille(db: Session = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_current_user)):
+    count = document_service.vider_corbeille(db=db, id_utilisateur=current_user.id)
+    return {"message": f"{count} document(s) supprime(s) definitivement"}
+
+
+@router.post("/{document_id}/restaurer")
+def restaurer_document(document_id: int,
+                       db: Session = Depends(get_db),
+                       current_user: Utilisateur = Depends(get_current_user)):
+    if not document_service.restaurer_document(
+        db=db, document_id=document_id, id_utilisateur=current_user.id
+    ):
+        raise HTTPException(status_code=404, detail="Document introuvable dans la corbeille")
+    return {"message": "Document restaure"}
+
+
+@router.delete("/{document_id}/definitif")
+def delete_definitif(document_id: int,
+                     db: Session = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_current_user)):
+    if not document_service.delete_definitif(
+        db=db, document_id=document_id, id_utilisateur=current_user.id
+    ):
+        raise HTTPException(status_code=404, detail="Document introuvable")
+    return {"message": "Document supprime definitivement"}
+
+
 @router.get("/", response_model=DocumentListResponse)
 def list_documents(page: int = Query(1, ge=1),
                    size: int = Query(20, ge=1, le=100),

@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import RegisterPage from "./pages/RegisterPage"
 import CategoriesPage from "./pages/CategoriesPage"
 import DocumentsPage from "./pages/DocumentsPage"
+import CorbeillePage from "./pages/CorbeillePage"
 import ToastContainer from "./components/ToastContainer"
 import { AuthProvider } from "./contexts/AuthContext"
 import { ToastProvider } from "./contexts/ToastContext"
@@ -36,6 +37,11 @@ function App() {
                 <Route path="/documents" element={
                   <ProtectedRoute>
                     <DocumentsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/corbeille" element={
+                  <ProtectedRoute>
+                    <CorbeillePage />
                   </ProtectedRoute>
                 } />
               </Routes>
