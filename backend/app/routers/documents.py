@@ -8,6 +8,7 @@ from app.models.categories import Categorie
 from fastapi.responses import FileResponse
 from app.core.dependencies import get_current_user
 from app.models import Utilisateur
+from datetime import date
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -110,17 +111,30 @@ def list_documents(page: int = Query(1, ge=1),
     return documents
 
 @router.get("/search",response_model=list[DocumentSearchResult])
-def search_document(query: str = Query(...,min_length=1),
+def search_document(query: str | None = Query(None,min_length=1),
                     page: int = Query(1,ge=1),
                     size: int = Query(20,ge=1,le=100),
+                    auteur: str | None = Query(None),
+                    type_fichier: str | None = Query(None),
+                    id_categorie: int | None = Query(None),
+                    id_tags: list[int] | None = Query(None),
+                    date_debut: date | None = Query(None),
+                    date_fin: date | None = Query(None),
                     db: Session = Depends(get_db),
-                    current_user: Utilisateur = Depends(get_current_user)):
+                    current_user: Utilisateur = Depends(get_current_user)
+                    ):
 
-    resulats = document_service.search_documents(db=db,
-                                                 query=query,
-                                                 id_utilisateur=current_user.id,
+    resulats = document_service.search_documents(query=query,
                                                  page=page,
-                                                 size=size)
+                                                 size=size,
+                                                 auteur=auteur,
+                                                 type_fichier=type_fichier,
+                                                 id_categorie=id_categorie,
+                                                 id_tags=id_tags,
+                                                 date_debut=date_debut,
+                                                 date_fin=date_fin,
+                                                 db=db,
+                                                 id_utilisateur=current_user.id)
     return resulats
 
 
@@ -153,16 +167,15 @@ def patch_document(document_id: int,
     return nouveau_document
 
 
-@router.delete("/{document_id}")
-def delete_document(document_id:int,
-                    db: Session= Depends(get_db),
-                    current_user: Utilisateur = Depends(get_current_user)):
-    if not document_service.delete_document(db=db,
-                                            document_id=document_id,
-                                            id_utilisateur=current_user.id):
-        raise HTTPException(status_code=404,detail="Document non trouve")
-    else:
-        return {"message": "document supprime avec succes"}
+@router.post("/{document_id}/corbeille")
+def mettre_corbeille(document_id: int,
+                     db: Session = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_current_user)):
+    if not document_service.mettre_corbeille(db=db,
+                                             document_id=document_id,
+                                             id_utilisateur=current_user.id):
+        raise HTTPException(status_code=404, detail="Document non trouve")
+    return {"message": "Document deplace dans la corbeille"}
 
 
 

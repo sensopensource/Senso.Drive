@@ -8,8 +8,8 @@ export function useDeleteDocument() {
 
   const mutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiFetch(`/documents/${id}`, {
-        method: 'DELETE',
+      const response = await apiFetch(`/documents/${id}/corbeille`, {
+        method: 'POST',
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))

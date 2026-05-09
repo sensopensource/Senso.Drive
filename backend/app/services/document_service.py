@@ -15,6 +15,8 @@ from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,
 from app.services.extraction import extract_text
 from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
+from datetime import date
+from app.models.tags import Tag
 
 
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
@@ -207,9 +209,9 @@ def patch_document(db: Session,
     return _to_document_read(document, v)
 
 
-def delete_document(db: Session,
-                    document_id: int,
-                    id_utilisateur: int) -> bool:
+def mettre_corbeille(db: Session,
+                     document_id: int,
+                     id_utilisateur: int) -> bool:
 
     document = get_document(db=db,
                             document_id=document_id,
@@ -327,90 +329,133 @@ def download_document_latest_version(db: Session,
 
     return fichier
 
+def _get_categorie_descendants_ids(db: Session, id_categorie: int, id_utilisateur: int) -> list[int]:
+    """Retourne l'id de la catégorie + tous les ids de ses descendantes"""
+    racine = db.query(Categorie).filter(
+        Categorie.id == id_categorie,
+        Categorie.id_utilisateur == id_utilisateur,
+    ).first()
+    if not racine:
+        return []
+
+    ids = [racine.id]
+    a_visiter = [racine]
+    while a_visiter:
+        courante = a_visiter.pop() 
+        for enfant in courante.enfants:
+            ids.append(enfant.id)
+            a_visiter.append(enfant)
+    return ids
+
+
 def search_documents(
     db: Session,
-    query: str,
     id_utilisateur: int,
+    query: str | None = None,
     page: int = 1,
     size: int = 20,
+    type_fichier: str | None = None,
+    auteur: str | None = None,
+    id_categorie: int | None = None,
+    id_tags: list[int] | None = None,
+    date_debut: date | None = None,
+    date_fin: date | None = None,
 ) -> list[DocumentSearchResult]:
-    tsquery = func.websearch_to_tsquery('french_unaccent', query)
-    rank = func.ts_rank_cd(Version.search_vector, tsquery)
+    aucun_critere = ( query is None
+                      and type_fichier is None
+                      and auteur is None
+                      and id_categorie is None
+                      and not id_tags
+                      and date_debut is None
+                      and date_fin is None)
+    if aucun_critere:
+       return []
+    
+    base_query = (
+        db.query(Document)
+        .join(Version, Document.id == Version.id_document)
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .filter(Document.deleted_at.is_(None))
+    )
 
-    options_headline = 'MaxWords=25, MinWords=10, StartSel=<b>, StopSel=</b>'
-    func_extrait = func.ts_headline('french_unaccent', Version.contenu, tsquery, options_headline).label('extrait')
+    if type_fichier:
+        base_query = base_query.filter(Version.type_fichier == type_fichier)
+    if auteur:
+        base_query = base_query.filter(Document.auteur == auteur)
+    if id_categorie:
+        ids_categorie = _get_categorie_descendants_ids(db, id_categorie, id_utilisateur)
+        if not ids_categorie:
+            return []
+        base_query = base_query.filter(Document.id_categorie.in_(ids_categorie))
+    if id_tags:
+        base_query = base_query.filter(Document.tags.any(Tag.id.in_(id_tags))))
+    if date_debut:
+        base_query = base_query.filter(
+            or_(Document.date_creation >= date_debut,
+                Version.date_upload >= date_debut))
+    if date_fin:
+        base_query = base_query.filter(
+            or_(Document.date_creation <= date_fin,
+                Version.date_upload <= date_fin))
 
     offset = (page - 1) * size
 
+    if query:
+        tsquery = func.websearch_to_tsquery('french_unaccent', query)
+        rank = func.ts_rank_cd(Version.search_vector, tsquery)
+        options_headline = 'MaxWords=25, MinWords=10, StartSel=<b>, StopSel=</b>'
+        func_extrait = func.ts_headline(
+            'french_unaccent', Version.contenu, tsquery, options_headline
+        ).label('extrait')
+
+        rows = (
+            base_query
+            .add_columns(func_extrait)
+            .filter(Version.search_vector.op('@@')(tsquery))
+            .order_by(rank.desc())
+            .offset(offset)
+            .limit(size)
+            .all()
+        )
+
+        resultats = []
+        for document, extrait_value in rows:
+            resultats.append(DocumentSearchResult(
+                id=document.id,
+                titre=document.titre,
+                auteur=document.auteur,
+                date_creation=document.date_creation,
+                extrait=extrait_value,
+            ))
+
+        if not resultats:
+            resultats = search_document_fallback(
+                db=db,
+                query=query,
+                id_utilisateur=id_utilisateur,
+                size=size,
+                page=page,
+            )
+        return resultats
+
     rows = (
-        db.query(Document, func_extrait)
-        .join(Version, Version.id_document == Document.id)
-        .filter(Document.id_utilisateur == id_utilisateur)
-        .filter(Document.deleted_at.is_(None))
-        .filter(Version.search_vector.op('@@')(tsquery))
-        .order_by(rank.desc())
+        base_query
+        .distinct()
+        .order_by(Document.date_creation.desc())
         .offset(offset)
         .limit(size)
         .all()
     )
 
     resultats = []
-    for document, extrait_value in rows:
-        resultat = DocumentSearchResult(
+    for document in rows:
+        resultats.append(DocumentSearchResult(
             id=document.id,
             titre=document.titre,
             auteur=document.auteur,
             date_creation=document.date_creation,
-            extrait=extrait_value,
-        )
-        resultats.append(resultat)
-
-    if not resultats:
-        resultats = search_document_fallback(db=db,
-                                            query=query,
-                                            page=page,
-                                            id_utilisateur=id_utilisateur,
-                                            size=size)
-    return resultats
-    
-
-def search_document_fallback(db: Session,
-                             query: str,
-                             id_utilisateur: int,
-                             size: int,
-                             page: int) -> list[DocumentSearchResult]:
-    
-    offset=(page-1)*size
-
-    score1 = func.similarity(func.coalesce(Document.auteur,''),query).label('score1')
-    score2 = func.similarity(func.coalesce(Document.titre,''),query).label('score2')
-    
-    resultats = []
-    rows = ( 
-            db.query(Document,score1,score2)
-            .filter(
-                or_(
-                    func.coalesce(Document.titre,'').op('%')(query),
-                    func.coalesce(Document.auteur,'').op('%')(query)
-                )
-            )
-            .filter(Document.id_utilisateur==id_utilisateur)
-            .filter(Document.deleted_at.is_(None))
-            .order_by((score1+score2).desc())
-            .offset(offset)
-            .limit(size)
-            .all() 
-    )
-
-    for document,scoreA,scoreT in rows:
-        resultat = DocumentSearchResult(
-            id=document.id,
-            titre=document.titre,
-            auteur=document.auteur,
-            date_creation=document.date_creation,
-            extrait=None
-        )
-        resultats.append(resultat)
+            extrait=None,
+        ))
     return resultats
 
 
