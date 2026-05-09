@@ -38,6 +38,7 @@ export function useUploadDocument() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
       showToast(`Document "${data.titre}" uploadé`, 'success')
     },
     onError: (error) => {
