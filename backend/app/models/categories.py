@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Text, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.database import Base
 
 
@@ -11,11 +11,12 @@ class Categorie(Base):
     id_utilisateur = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
 
     # Relation auto-référente : enfants d'une catégorie
+    # remote_side sur le parent → enfants pointe bien vers les descendants
     enfants = relationship(
         "Categorie",
-        backref="parent",
-        remote_side=[id],
-        cascade="all, delete",
+        backref=backref("parent", remote_side=[id]),
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     __table_args__ = (
