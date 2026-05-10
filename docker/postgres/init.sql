@@ -97,7 +97,7 @@ CREATE TABLE documents_tags(
 
 CREATE TABLE historiques_recherches(
     id SERIAL PRIMARY KEY,
-    id_utilisateur int REFERENCES utilisateurs(id),
+    id_utilisateur int REFERENCES utilisateurs(id) NOT NULL,
     requete TEXT NOT NULL,
     date_recherche TIMESTAMPTZ DEFAULT NOW(),
     nb_resultats int NOT NULL

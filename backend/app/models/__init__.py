@@ -4,3 +4,4 @@ from app.models.utilisateurs import Utilisateur
 from app.models.categories import Categorie
 from app.models.logs import Log
 from app.models.tags import Tag
+from app.models.historiques_recherches import HistoriqueRecherche
