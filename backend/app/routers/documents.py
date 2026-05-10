@@ -1,14 +1,18 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.tag import DocumentTagsUpdate
-from app.services import document_service, categorie_service, tag_service
+from app.services import document_service, categorie_service, tag_service, log_service
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
 from app.core.dependencies import require_user
 from app.models import Utilisateur
 from datetime import date
+
+
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -16,6 +20,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 # lutilisateur envoie une requette HTTP avec ContentType multipart pr le pdf,cest pour ca qu'on passe par File() et Form()
 @router.post("/", response_model=DocumentRead)
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     titre: str | None = Form(None),
     auteur: str | None = Form(None),
@@ -49,6 +54,13 @@ async def upload_document(
         id_utilisateur=current_user.id,
         id_categorie=id_categorie,
     )
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.upload",
+        details=f"document_id={document.id} titre={document.titre}",
+        adresse_ip=_client_ip(request),
+    )
     return document
 
 
@@ -66,31 +78,55 @@ def list_corbeille(page: int = Query(1, ge=1),
 
 
 @router.delete("/corbeille")
-def vider_corbeille(db: Session = Depends(get_db),
+def vider_corbeille(request: Request,
+                    db: Session = Depends(get_db),
                     current_user: Utilisateur = Depends(require_user)):
     count = document_service.vider_corbeille(db=db, id_utilisateur=current_user.id)
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.corbeille.vider",
+        details=f"{count} document(s) supprime(s) definitivement",
+        adresse_ip=_client_ip(request),
+    )
     return {"message": f"{count} document(s) supprime(s) definitivement"}
 
 
 @router.post("/{document_id}/restaurer")
 def restaurer_document(document_id: int,
+                       request: Request,
                        db: Session = Depends(get_db),
                        current_user: Utilisateur = Depends(require_user)):
     if not document_service.restaurer_document(
         db=db, document_id=document_id, id_utilisateur=current_user.id
     ):
         raise HTTPException(status_code=404, detail="Document introuvable dans la corbeille")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.restaurer",
+        details=f"document_id={document_id}",
+        adresse_ip=_client_ip(request),
+    )
     return {"message": "Document restaure"}
 
 
 @router.delete("/{document_id}/definitif")
 def delete_definitif(document_id: int,
+                     request: Request,
                      db: Session = Depends(get_db),
                      current_user: Utilisateur = Depends(require_user)):
     if not document_service.delete_definitif(
         db=db, document_id=document_id, id_utilisateur=current_user.id
     ):
         raise HTTPException(status_code=404, detail="Document introuvable")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.delete_definitif",
+        details=f"document_id={document_id}",
+        adresse_ip=_client_ip(request),
+    )
     return {"message": "Document supprime definitivement"}
 
 
@@ -159,6 +195,7 @@ def get_document(document_id: int,
 @router.patch("/{document_id}",response_model=DocumentRead)
 def patch_document(document_id: int,
                    document: DocumentPatch,
+                   request: Request,
                    db: Session= Depends(get_db),
                    current_user: Utilisateur = Depends(require_user)):
 
@@ -170,23 +207,39 @@ def patch_document(document_id: int,
                                                      id_categorie=document.id_categorie)
     if not nouveau_document:
         raise HTTPException(status_code=404,detail="Modification impossible")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.update",
+        details=f"document_id={document_id}",
+        adresse_ip=_client_ip(request),
+    )
     return nouveau_document
 
 
 @router.post("/{document_id}/corbeille")
 def mettre_corbeille(document_id: int,
+                     request: Request,
                      db: Session = Depends(get_db),
                      current_user: Utilisateur = Depends(require_user)):
     if not document_service.mettre_corbeille(db=db,
                                              document_id=document_id,
                                              id_utilisateur=current_user.id):
         raise HTTPException(status_code=404, detail="Document non trouve")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="document.corbeille",
+        details=f"document_id={document_id}",
+        adresse_ip=_client_ip(request),
+    )
     return {"message": "Document deplace dans la corbeille"}
 
 
 
 @router.get("/{document_id}/download")
 def download_document(document_id: int,
+                      request: Request,
                       db: Session = Depends(get_db),
                       current_user: Utilisateur = Depends(require_user)):
 
@@ -195,12 +248,20 @@ def download_document(document_id: int,
                                                                    id_utilisateur=current_user.id)
        if not fichier:
             raise HTTPException(status_code=404,detail="Document non trouve")
+       log_service.log_action(
+           db=db,
+           id_utilisateur=current_user.id,
+           action="document.download",
+           details=f"document_id={document_id} filename={fichier.filename}",
+           adresse_ip=_client_ip(request),
+       )
        return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)
 
 
 @router.post("/{document_id}/versions", response_model=DocumentRead)
 async def upload_nouvelle_version(
     document_id: int,
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(require_user),
@@ -215,6 +276,13 @@ async def upload_nouvelle_version(
     )
     if not document:
         raise HTTPException(status_code=404, detail="Document introuvable")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="version.upload",
+        details=f"document_id={document_id}",
+        adresse_ip=_client_ip(request),
+    )
     return document
 
 
@@ -259,6 +327,7 @@ def list_versions(document_id: int,
 @router.get("/{document_id}/versions/{numero}/download")
 def download_version(document_id: int,
                      numero: int,
+                     request: Request,
                      db: Session = Depends(get_db),
                      current_user: Utilisateur = Depends(require_user)):
     fichier = document_service.download_version(db=db,
@@ -267,6 +336,13 @@ def download_version(document_id: int,
                                                 id_utilisateur=current_user.id)
     if not fichier:
         raise HTTPException(status_code=404, detail="Version introuvable")
+    log_service.log_action(
+        db=db,
+        id_utilisateur=current_user.id,
+        action="version.download",
+        details=f"document_id={document_id} numero={numero}",
+        adresse_ip=_client_ip(request),
+    )
     return FileResponse(path=fichier.path, filename=fichier.filename, media_type=fichier.media_type)
 
 

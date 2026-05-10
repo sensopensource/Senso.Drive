@@ -14,12 +14,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register",response_model=Token)
 def register(
     payload: UtilisateurRegister,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+    adresse_ip = request.client.host if request.client else None
     user = auth_service.register_utilisateur(db=db,
                                              email=payload.email,
                                              password=payload.password,
-                                             nom=payload.nom)
+                                             nom=payload.nom,
+                                             adresse_ip=adresse_ip)
     if not user:
         raise HTTPException(status_code=409,detail="mail deja pris")
     token = create_access_token(user.id)
