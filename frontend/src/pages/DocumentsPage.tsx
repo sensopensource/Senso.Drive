@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import { useDocuments } from "../hooks/useDocuments"
 import { useSearchDocuments, type SearchFilters } from "../hooks/useSearchDocuments"
@@ -9,6 +9,7 @@ import DocumentsTable from "../components/DocumentsTable"
 import AppShell from "../components/AppShell"
 import UploadModal from "../components/UploadModal"
 import DocumentInlinePanel from "../components/DocumentInlinePanel"
+import SearchFiltersPanel from "../components/SearchFilters"
 
 const SIZE = 20
 
@@ -25,11 +26,12 @@ function DocumentsPage() {
   })()
 
   // Recherche : query + filtres lus depuis l'URL (pousses par la TopBar avec navigate)
+  // Le filtre categorie reutilise le param `cat` (commun avec la navigation par dossier)
   const searchQuery = searchParams.get('query') ?? ''
   const searchFilters: SearchFilters = {
     type_fichier: searchParams.get('type_fichier'),
     auteur: searchParams.get('auteur'),
-    id_categorie: searchParams.get('id_categorie') ? Number(searchParams.get('id_categorie')) : null,
+    id_categorie: filterCategorie,
     id_tags: searchParams.getAll('id_tags').map(Number),
     date_debut: searchParams.get('date_debut'),
     date_fin: searchParams.get('date_fin'),
@@ -38,7 +40,6 @@ function DocumentsPage() {
     searchQuery.length > 0
     || !!searchFilters.type_fichier
     || !!searchFilters.auteur
-    || searchFilters.id_categorie != null
     || (searchFilters.id_tags?.length ?? 0) > 0
     || !!searchFilters.date_debut
     || !!searchFilters.date_fin
@@ -66,20 +67,19 @@ function DocumentsPage() {
       next.delete('upload')
       setSearchParams(next, { replace: true })
     }
+    const focusId = searchParams.get('focus')
+    if (focusId) {
+      setSelectedId(Number(focusId))
+      const next = new URLSearchParams(searchParams)
+      next.delete('focus')
+      setSearchParams(next, { replace: true })
+    }
   }, [searchParams, setSearchParams])
 
   // Reset la pagination quand le filtre change
   useEffect(() => {
     setPage(1)
   }, [filterCategorie])
-
-  const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const v = e.target.value
-    const next = new URLSearchParams(searchParams)
-    if (v) next.set('cat', v)
-    else next.delete('cat')
-    setSearchParams(next)
-  }
 
   const handleOpenFolder = (id: number) => {
     const next = new URLSearchParams(searchParams)
@@ -167,17 +167,7 @@ function DocumentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <select
-            value={filterCategorie ?? ''}
-            onChange={handleFilterChange}
-            disabled={isSearchMode}
-            className="btn-ghost flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed bg-transparent"
-          >
-            <option value="">Toutes catégories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nom}</option>
-            ))}
-          </select>
+          <SearchFiltersPanel searchParams={searchParams} setSearchParams={setSearchParams} />
           <div className="w-[0.5px] h-5 bg-line mx-1"></div>
           <button
             onClick={() => setIsUploadOpen(true)}
