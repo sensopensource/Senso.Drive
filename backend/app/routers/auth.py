@@ -6,7 +6,7 @@ from app.database import get_db
 from app.schemas.utilisateur import Token,UtilisateurRegister,UtilisateurRead
 from app.services import auth_service
 from app.core.security import create_access_token
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_user
 from app.models.utilisateurs import Utilisateur
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -49,6 +49,6 @@ def login(
 
 
 @router.get("/me",response_model=UtilisateurRead)
-def me(current_user: Utilisateur = Depends(get_current_user)):
+def me(current_user: Utilisateur = Depends(require_user)):
     return current_user
     

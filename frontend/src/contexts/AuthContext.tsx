@@ -8,10 +8,10 @@ type AuthContextType = {
   logout: () => void
 }
 
-// 2. Le contexte (valeur par défaut = null au cas ou un composant lit sans Provider)
+// Le contexte (valeur par défaut = null au cas ou un composant lit sans Provider)
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// 3. Le Provider — composant à mettre autour de l'app
+// Le Provider — composant à mettre autour de l'app
 type ProviderProps = {
   children: ReactNode
 }

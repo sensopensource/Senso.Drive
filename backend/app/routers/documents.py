@@ -6,7 +6,7 @@ from app.schemas.tag import DocumentTagsUpdate
 from app.services import document_service, categorie_service, tag_service
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_user
 from app.models import Utilisateur
 from datetime import date
 
@@ -21,7 +21,7 @@ async def upload_document(
     auteur: str | None = Form(None),
     id_categorie: int | None = Form(None),
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user)):
+    current_user: Utilisateur = Depends(require_user)):
 
     # Si l'user n'a pas choisi de categorie, on utilise "Non classe"
     if id_categorie is None:
@@ -56,7 +56,7 @@ async def upload_document(
 def list_corbeille(page: int = Query(1, ge=1),
                    size: int = Query(20, ge=1, le=100),
                    db: Session = Depends(get_db),
-                   current_user: Utilisateur = Depends(get_current_user)):
+                   current_user: Utilisateur = Depends(require_user)):
     return document_service.list_corbeille(
         db=db,
         id_utilisateur=current_user.id,
@@ -67,7 +67,7 @@ def list_corbeille(page: int = Query(1, ge=1),
 
 @router.delete("/corbeille")
 def vider_corbeille(db: Session = Depends(get_db),
-                    current_user: Utilisateur = Depends(get_current_user)):
+                    current_user: Utilisateur = Depends(require_user)):
     count = document_service.vider_corbeille(db=db, id_utilisateur=current_user.id)
     return {"message": f"{count} document(s) supprime(s) definitivement"}
 
@@ -75,7 +75,7 @@ def vider_corbeille(db: Session = Depends(get_db),
 @router.post("/{document_id}/restaurer")
 def restaurer_document(document_id: int,
                        db: Session = Depends(get_db),
-                       current_user: Utilisateur = Depends(get_current_user)):
+                       current_user: Utilisateur = Depends(require_user)):
     if not document_service.restaurer_document(
         db=db, document_id=document_id, id_utilisateur=current_user.id
     ):
@@ -86,7 +86,7 @@ def restaurer_document(document_id: int,
 @router.delete("/{document_id}/definitif")
 def delete_definitif(document_id: int,
                      db: Session = Depends(get_db),
-                     current_user: Utilisateur = Depends(get_current_user)):
+                     current_user: Utilisateur = Depends(require_user)):
     if not document_service.delete_definitif(
         db=db, document_id=document_id, id_utilisateur=current_user.id
     ):
@@ -99,7 +99,7 @@ def list_documents(page: int = Query(1, ge=1),
                    size: int = Query(20, ge=1, le=100),
                    id_categorie: int | None = Query(None),
                    db: Session = Depends(get_db),
-                   current_user: Utilisateur = Depends(get_current_user)):
+                   current_user: Utilisateur = Depends(require_user)):
 
     documents = document_service.list_documents(
         db=db,
@@ -112,7 +112,7 @@ def list_documents(page: int = Query(1, ge=1),
 
 @router.get("/auteurs", response_model=list[str])
 def list_auteurs(db: Session = Depends(get_db),
-                 current_user: Utilisateur = Depends(get_current_user)):
+                 current_user: Utilisateur = Depends(require_user)):
     auteurs = document_service.list_auteurs(db=db, id_utilisateur=current_user.id)
     return auteurs
 
@@ -127,7 +127,7 @@ def search_document(query: str | None = Query(None,min_length=1),
                     date_debut: date | None = Query(None),
                     date_fin: date | None = Query(None),
                     db: Session = Depends(get_db),
-                    current_user: Utilisateur = Depends(get_current_user)
+                    current_user: Utilisateur = Depends(require_user)
                     ):
 
     resulats = document_service.search_documents(query=query,
@@ -147,7 +147,7 @@ def search_document(query: str | None = Query(None,min_length=1),
 @router.get("/{document_id}", response_model=DocumentReadDetail)
 def get_document(document_id: int,
                  db: Session = Depends(get_db),
-                 current_user: Utilisateur = Depends(get_current_user)):
+                 current_user: Utilisateur = Depends(require_user)):
 
     document_detail = document_service.get_document_detail(db=db,
                                                            document_id=document_id,
@@ -160,7 +160,7 @@ def get_document(document_id: int,
 def patch_document(document_id: int,
                    document: DocumentPatch,
                    db: Session= Depends(get_db),
-                   current_user: Utilisateur = Depends(get_current_user)):
+                   current_user: Utilisateur = Depends(require_user)):
 
     nouveau_document=document_service.patch_document(db=db,
                                                      document_id=document_id,
@@ -176,7 +176,7 @@ def patch_document(document_id: int,
 @router.post("/{document_id}/corbeille")
 def mettre_corbeille(document_id: int,
                      db: Session = Depends(get_db),
-                     current_user: Utilisateur = Depends(get_current_user)):
+                     current_user: Utilisateur = Depends(require_user)):
     if not document_service.mettre_corbeille(db=db,
                                              document_id=document_id,
                                              id_utilisateur=current_user.id):
@@ -188,7 +188,7 @@ def mettre_corbeille(document_id: int,
 @router.get("/{document_id}/download")
 def download_document(document_id: int,
                       db: Session = Depends(get_db),
-                      current_user: Utilisateur = Depends(get_current_user)):
+                      current_user: Utilisateur = Depends(require_user)):
 
        fichier = document_service.download_document_latest_version(db=db,
                                                                    document_id=document_id,
@@ -203,7 +203,7 @@ async def upload_nouvelle_version(
     document_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user),
+    current_user: Utilisateur = Depends(require_user),
 ):
     file_bytes = await file.read()
     document = document_service.add_version(
@@ -222,7 +222,7 @@ async def upload_nouvelle_version(
 def assign_tags_to_document(document_id: int,
                            payload: DocumentTagsUpdate,
                            db: Session = Depends(get_db),
-                           current_user: Utilisateur = Depends(get_current_user)):
+                           current_user: Utilisateur = Depends(require_user)):
     document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     if not document:
         raise HTTPException(status_code=404, detail="Document non trouve")
@@ -234,7 +234,7 @@ def assign_tags_to_document(document_id: int,
 @router.post("/{document_id}/analyser")
 def analyser_document(document_id: int,
                       db: Session = Depends(get_db),
-                      current_user: Utilisateur = Depends(get_current_user)):
+                      current_user: Utilisateur = Depends(require_user)):
 
     resume = document_service.analyser_document(db=db,
                                                 document_id=document_id,
@@ -247,7 +247,7 @@ def analyser_document(document_id: int,
 @router.get("/{document_id}/versions", response_model=list[VersionRead])
 def list_versions(document_id: int,
                   db: Session = Depends(get_db),
-                  current_user: Utilisateur = Depends(get_current_user)):
+                  current_user: Utilisateur = Depends(require_user)):
     versions = document_service.list_versions(db=db,
                                               document_id=document_id,
                                               id_utilisateur=current_user.id)
@@ -260,7 +260,7 @@ def list_versions(document_id: int,
 def download_version(document_id: int,
                      numero: int,
                      db: Session = Depends(get_db),
-                     current_user: Utilisateur = Depends(get_current_user)):
+                     current_user: Utilisateur = Depends(require_user)):
     fichier = document_service.download_version(db=db,
                                                 document_id=document_id,
                                                 numero=numero,
@@ -274,7 +274,7 @@ def download_version(document_id: int,
 def analyser_version(document_id: int,
                      numero: int,
                      db: Session = Depends(get_db),
-                     current_user: Utilisateur = Depends(get_current_user)):
+                     current_user: Utilisateur = Depends(require_user)):
     resume = document_service.analyser_version(db=db,
                                                document_id=document_id,
                                                numero=numero,
