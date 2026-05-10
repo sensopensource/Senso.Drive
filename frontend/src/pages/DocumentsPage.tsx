@@ -193,7 +193,7 @@ function DocumentsPage() {
           {error && (
             <div className="flex-1 flex flex-col items-center justify-center gap-2">
               <span className="material-symbols-outlined text-danger text-5xl">error_outline</span>
-              <p className="font-body text-sm text-soft">
+              <p className="text-[12.5px] text-soft">
                 {isSearchMode ? "Erreur lors de la recherche." : "Impossible de charger vos documents."}
               </p>
             </div>
@@ -204,7 +204,7 @@ function DocumentsPage() {
               <span className="material-symbols-outlined text-mute text-5xl">
                 {isSearchMode ? 'manage_search' : 'inventory_2'}
               </span>
-              <p className="font-body text-sm text-soft">
+              <p className="text-[12.5px] text-soft">
                 {isSearchMode
                   ? `Aucun résultat pour « ${searchQuery} ».`
                   : filterCategorie != null

@@ -23,7 +23,7 @@ function RegisterPage() {
     const response = await fetch("http://localhost:8000/auth/register", {
       method: 'POST',
       headers: { 'Content-type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     })
 
     const data = await response.json()
@@ -38,33 +38,37 @@ function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-ink flex items-center justify-center px-4 py-8 grid-bg">
+      <div className="w-full max-w-[400px]">
 
-        {/* Wordmark + titre + sous-titre */}
-        <div className="mb-8 text-center">
-          <div className="font-mono text-xs uppercase tracking-wider text-fg-3 mb-3">
-            SENSO.DRIVE
+        {/* Brand */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 hair flex items-center justify-center">
+              <span className="material-symbols-outlined text-[12px] text-soft">inventory_2</span>
+            </div>
+            <span className="text-[13px] font-semibold tracking-tight text-bright">Senso</span>
+            <span className="text-[13px] font-mono text-mute">.Drive</span>
           </div>
-          <h1 className="font-display text-3xl font-semibold text-fg-1">
+          <h1 className="text-[22px] font-semibold tracking-tight text-bright">
             Créer votre accès
           </h1>
-          <p className="font-body text-sm text-fg-2 mt-2">
+          <p className="text-[12px] text-soft mt-1.5">
             Configurez votre drive et accédez à vos documents.
           </p>
         </div>
 
-        {/* Carte avec form */}
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-1 border border-border p-7 space-y-4"
+          className="hair bg-panel p-6 flex flex-col gap-4"
         >
 
-          {/* Champ Nom */}
-          <div>
+          {/* Nom */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="nom"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Nom
             </label>
@@ -75,15 +79,15 @@ function RegisterPage() {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setNom(e.target.value)}
               placeholder="Votre nom"
               autoComplete="off"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Champ Email */}
-          <div>
+          {/* Email */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="email"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               E-mail
             </label>
@@ -94,15 +98,15 @@ function RegisterPage() {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               placeholder="souidi.ayoub@supmti.ac.ma"
               autoComplete="off"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Champ Mot de passe */}
-          <div>
+          {/* Mot de passe */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="password"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Mot de passe
             </label>
@@ -112,15 +116,15 @@ function RegisterPage() {
               value={mdp}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setMdp(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Champ Confirmation */}
-          <div>
+          {/* Confirmation */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="password2"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Confirmer
             </label>
@@ -130,30 +134,30 @@ function RegisterPage() {
               value={mdp2}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setMdp2(e.target.value)}
               placeholder="Retapez votre mot de passe"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Bouton submit */}
+          {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-primary text-fg-inverse font-body font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
+            className="btn-primary w-full !py-2.5 mt-2"
           >
             Créer mon compte
           </button>
 
-          {/* Message d'erreur */}
+          {/* Error */}
           {regError && (
-            <p className="text-danger text-sm font-body text-center">
+            <p className="text-[11.5px] text-[var(--color-danger-raw)] font-mono text-center">
               {regError}
             </p>
           )}
         </form>
 
-        {/* Footer carte */}
-        <div className="mt-6 text-center text-sm font-body text-fg-2">
+        {/* Footer */}
+        <div className="mt-5 text-center text-[12px] text-soft">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-fg-1 hover:underline">
+          <Link to="/login" className="text-bright hover:underline">
             Se connecter
           </Link>
         </div>

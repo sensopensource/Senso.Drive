@@ -323,7 +323,6 @@ function AppSidebar() {
         >
           <span className="material-symbols-outlined text-[18px]" style={{ color: '#0b0b0c' }}>upload</span>
           <span className="flex-1 text-left">Importer un document</span>
-          <kbd className="on-light">⌘U</kbd>
         </button>
         <button
           onClick={() => setNewCatTarget({ parentId: null, parentNom: null })}

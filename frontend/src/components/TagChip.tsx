@@ -9,7 +9,7 @@ interface TagChipProps {
 export function TagChip({ tag, removable, onRemove }: TagChipProps) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono uppercase tracking-wider text-fg-1 border"
+      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-mono uppercase tracking-wider text-bright hair"
       style={{
         backgroundColor: tag.color,
         borderColor: tag.color,
@@ -23,7 +23,7 @@ export function TagChip({ tag, removable, onRemove }: TagChipProps) {
             e.stopPropagation()
             onRemove?.()
           }}
-          className="text-fg-1/70 hover:text-fg-1 transition-colors leading-none"
+          className="text-bright/70 hover:text-bright transition-colors leading-none"
           aria-label={`Supprimer ${tag.name}`}
         >
           ✕

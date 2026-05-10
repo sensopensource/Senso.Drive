@@ -67,7 +67,7 @@ function CorbeillePage() {
         {!isLoading && documents.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center gap-2 py-20">
             <span className="material-symbols-outlined text-mute text-5xl">delete_outline</span>
-            <p className="font-body text-sm text-soft">La corbeille est vide.</p>
+            <p className="text-[12.5px] text-soft">La corbeille est vide.</p>
             <p className="section-label">Les documents supprimés apparaîtront ici.</p>
           </div>
         )}

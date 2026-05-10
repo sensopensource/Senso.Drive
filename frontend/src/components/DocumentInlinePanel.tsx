@@ -261,7 +261,7 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
       {error && (
         <div className="flex-1 flex flex-col items-center justify-center gap-2">
           <span className="material-symbols-outlined text-danger text-5xl">error_outline</span>
-          <p className="font-body text-sm text-soft">Impossible de charger ce document.</p>
+          <p className="text-[12.5px] text-soft">Impossible de charger ce document.</p>
         </div>
       )}
 

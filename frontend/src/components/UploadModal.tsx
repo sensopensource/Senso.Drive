@@ -18,7 +18,6 @@ function UploadModal({ onClose }: Props) {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] ?? null
     setFile(selected)
-    // Pré-remplit le titre avec le nom du fichier (sans l'extension)
     if (selected && !titre) {
       const sansExt = selected.name.replace(/\.[^.]+$/, '')
       setTitre(sansExt)
@@ -36,45 +35,42 @@ function UploadModal({ onClose }: Props) {
   }
 
   return (
-    // Overlay sombre + clic ferme
     <div
-      className="fixed inset-0 bg-overlay z-50 flex items-center justify-center px-4"
+      className="fixed inset-0 bg-ink/75 z-50 flex items-center justify-center px-4"
       onClick={onClose}
     >
-
-      {/* Carte modal — stopPropagation empêche le clic interne de fermer */}
       <div
-        className="bg-surface-2 border border-border w-full max-w-md"
+        className="hair bg-panel w-full max-w-[440px]"
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Header du modal */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 hair-b">
           <div>
-            <div className="font-mono text-xs uppercase tracking-wider text-fg-3">
+            <div className="text-[10.5px] font-mono text-mute uppercase tracking-wider">
               Archive
             </div>
-            <h2 className="font-display text-lg text-fg-1 mt-1">
+            <h2 className="text-[15px] text-bright mt-0.5">
               Uploader un document
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-fg-3 hover:text-fg-1 transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-mute hover:text-bright transition-colors"
             aria-label="Fermer"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
 
           {/* Fichier */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="upload-file"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Fichier
             </label>
@@ -83,20 +79,20 @@ function UploadModal({ onClose }: Props) {
               type="file"
               accept=".pdf,.docx,.txt,.md"
               onChange={handleFileChange}
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body file:bg-surface-1 file:text-fg-2 file:border-0 file:px-3 file:py-1 file:mr-3 file:font-mono file:text-xs file:uppercase file:tracking-wider file:cursor-pointer"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none file:bg-elev file:text-soft file:border-0 file:px-2.5 file:py-1 file:mr-3 file:font-mono file:text-[10.5px] file:uppercase file:tracking-wider file:cursor-pointer hover:file:text-bright"
             />
             {file && (
-              <p className="font-mono text-xs text-fg-3 mt-1.5">
+              <p className="text-[11px] font-mono text-mute mt-0.5">
                 {file.name} · {(file.size / 1024).toFixed(1)} Ko
               </p>
             )}
           </div>
 
           {/* Catégorie */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="upload-categorie"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Catégorie
             </label>
@@ -104,7 +100,7 @@ function UploadModal({ onClose }: Props) {
               id="upload-categorie"
               value={idCategorie ?? ''}
               onChange={(e) => setIdCategorie(Number(e.target.value) || null)}
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors [&>option]:bg-ink [&>option]:text-bright"
             >
               <option value="">Aucune (Non classé)</option>
               {categories.map(cat => (
@@ -113,11 +109,11 @@ function UploadModal({ onClose }: Props) {
             </select>
           </div>
 
-          {/* Titre (optionnel) */}
-          <div>
+          {/* Titre */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="upload-titre"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Titre
             </label>
@@ -128,15 +124,15 @@ function UploadModal({ onClose }: Props) {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTitre(e.target.value)}
               placeholder="Titre du document"
               autoComplete="off"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Auteur (optionnel) */}
-          <div>
+          {/* Auteur */}
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="upload-auteur"
-              className="block font-mono text-xs uppercase tracking-wider text-fg-3 mb-1.5"
+              className="text-[10.5px] font-mono text-mute uppercase tracking-wider"
             >
               Auteur
             </label>
@@ -147,32 +143,32 @@ function UploadModal({ onClose }: Props) {
               onChange={(e: ChangeEvent<HTMLInputElement>) => setAuteur(e.target.value)}
               placeholder="Optionnel"
               autoComplete="off"
-              className="w-full bg-base border border-border text-fg-1 px-3 py-2 text-sm font-body focus:outline-none focus:border-primary"
+              className="hair bg-transparent text-[12.5px] text-bright px-2.5 py-2 outline-none focus:border-soft transition-colors placeholder:text-mute"
             />
           </div>
 
-          {/* Erreur éventuelle */}
+          {/* Erreur */}
           {error && (
-            <p className="text-danger text-sm font-body">
+            <p className="text-[11.5px] text-[var(--color-danger-raw)] font-mono">
               {error.message}
             </p>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="font-mono text-xs uppercase tracking-wider text-fg-3 hover:text-fg-1 transition-colors px-3 py-2"
+              className="btn-ghost"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={!file || isPending}
-              className="flex items-center gap-2 bg-primary text-fg-inverse font-body font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-primary flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span className="material-symbols-outlined text-base">upload</span>
+              <span className="material-symbols-outlined text-[15px]" style={{ color: '#0b0b0c' }}>upload</span>
               {isPending ? 'Envoi...' : 'Uploader'}
             </button>
           </div>

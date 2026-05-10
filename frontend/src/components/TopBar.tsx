@@ -100,8 +100,7 @@ function TopBar() {
         <div className="w-5 h-5 hair flex items-center justify-center">
           <span className="material-symbols-outlined text-[12px] text-soft">inventory_2</span>
         </div>
-        <span className="text-[13px] font-semibold tracking-tight text-bright">Senso</span>
-        <span className="text-[13px] font-mono text-mute">.Drive</span>
+        <span className="text-[13px] font-semibold tracking-tight text-bright">Senso<span className="font-mono text-mute">.Drive</span></span>
       </Link>
 
       {/* Search */}
@@ -120,7 +119,6 @@ function TopBar() {
               autoComplete="off"
               className="flex-1 bg-transparent border-none text-[13px] placeholder:text-mute text-bright p-0 outline-none"
             />
-            <kbd>⌘K</kbd>
           </div>
 
           {/* Dropdown */}

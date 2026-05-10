@@ -61,7 +61,7 @@ function CategorieCard({ categorie, onUpdate }: Props) {
         <>
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-mute text-base">label</span>
-            <span className="font-body text-sm text-bright">{categorie.nom}</span>
+            <span className="text-[13px] text-bright">{categorie.nom}</span>
             <span className="font-mono text-[10px] text-mute">{categorie.count}</span>
           </div>
           <div className="flex items-center gap-2">
