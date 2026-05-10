@@ -26,6 +26,15 @@ def create(db: Session, id_utilisateur: int, requete: str, nb_resultats: int)-> 
     db.refresh(historique)
     return historique
 
+def list_historique(db: Session, id_utilisateur: int) -> list[HistoriqueRecherche]:
+    return (
+        db.query(HistoriqueRecherche)
+        .filter(HistoriqueRecherche.id_utilisateur == id_utilisateur)
+        .order_by(HistoriqueRecherche.date_recherche.desc())
+        .limit(LIMITE_HISTORIQUE)
+        .all()
+    )
+
 def delete_one(db: Session, id_utilisateur: int, id_historique: int) -> bool:
     historique = (db.query(HistoriqueRecherche)
                   .filter(HistoriqueRecherche.id == id_historique,
