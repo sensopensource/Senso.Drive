@@ -347,6 +347,18 @@ def _get_categorie_descendants_ids(db: Session, id_categorie: int, id_utilisateu
             a_visiter.append(enfant)
     return ids
 
+def list_auteurs(db: Session, id_utilisateur: int) -> list[str]:
+    rows = (
+        db.query(Document.auteur)
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .filter(Document.deleted_at.is_(None))
+        .filter(Document.auteur.is_not(None))
+        .distinct()
+        .order_by(Document.auteur)
+        .all()
+    )
+    return [row[0] for row in rows]
+
 
 def search_documents(
     db: Session,
@@ -388,7 +400,7 @@ def search_documents(
             return []
         base_query = base_query.filter(Document.id_categorie.in_(ids_categorie))
     if id_tags:
-        base_query = base_query.filter(Document.tags.any(Tag.id.in_(id_tags))))
+        base_query = base_query.filter(Document.tags.any(Tag.id.in_(id_tags)))
     if date_debut:
         base_query = base_query.filter(
             or_(Document.date_creation >= date_debut,
@@ -449,6 +461,45 @@ def search_documents(
 
     resultats = []
     for document in rows:
+        resultats.append(DocumentSearchResult(
+            id=document.id,
+            titre=document.titre,
+            auteur=document.auteur,
+            date_creation=document.date_creation,
+            extrait=None,
+        ))
+    return resultats
+
+
+def search_document_fallback(db: Session,
+                             query: str,
+                             id_utilisateur: int,
+                             size: int,
+                             page: int) -> list[DocumentSearchResult]:
+
+    offset = (page - 1) * size
+
+    score1 = func.similarity(func.coalesce(Document.auteur, ''), query).label('score1')
+    score2 = func.similarity(func.coalesce(Document.titre, ''), query).label('score2')
+
+    rows = (
+        db.query(Document, score1, score2)
+        .filter(
+            or_(
+                func.coalesce(Document.titre, '').op('%')(query),
+                func.coalesce(Document.auteur, '').op('%')(query),
+            )
+        )
+        .filter(Document.id_utilisateur == id_utilisateur)
+        .filter(Document.deleted_at.is_(None))
+        .order_by((score1 + score2).desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+    resultats = []
+    for document, _scoreA, _scoreT in rows:
         resultats.append(DocumentSearchResult(
             id=document.id,
             titre=document.titre,

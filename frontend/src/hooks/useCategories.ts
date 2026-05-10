@@ -1,4 +1,4 @@
-import { apiFetch } from "../api"
+ import { apiFetch } from "../api"
 import type { Categorie } from "../types"
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query"
 import { useToast } from "../contexts/ToastContext"

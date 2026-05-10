@@ -110,6 +110,12 @@ def list_documents(page: int = Query(1, ge=1),
     )
     return documents
 
+@router.get("/auteurs", response_model=list[str])
+def list_auteurs(db: Session = Depends(get_db),
+                 current_user: Utilisateur = Depends(get_current_user)):
+    auteurs = document_service.list_auteurs(db=db, id_utilisateur=current_user.id)
+    return auteurs
+
 @router.get("/search",response_model=list[DocumentSearchResult])
 def search_document(query: str | None = Query(None,min_length=1),
                     page: int = Query(1,ge=1),
