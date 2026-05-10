@@ -9,7 +9,6 @@ import CorbeillePage from "./pages/CorbeillePage"
 import ToastContainer from "./components/ToastContainer"
 import { AuthProvider } from "./contexts/AuthContext"
 import { ToastProvider } from "./contexts/ToastContext"
-import { SearchProvider } from "./contexts/SearchContext"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const queryClient = new QueryClient()
@@ -20,32 +19,30 @@ function App() {
       <ToastProvider>
         <AuthProvider>
           <BrowserRouter>
-            <SearchProvider>
-              <Routes>
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/home" element={
-                  <ProtectedRoute>
-                    <HomePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/categories" element={
-                  <ProtectedRoute>
-                    <CategoriesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/documents" element={
-                  <ProtectedRoute>
-                    <DocumentsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/corbeille" element={
-                  <ProtectedRoute>
-                    <CorbeillePage />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </SearchProvider>
+            <Routes>
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/home" element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/categories" element={
+                <ProtectedRoute>
+                  <CategoriesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/documents" element={
+                <ProtectedRoute>
+                  <DocumentsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/corbeille" element={
+                <ProtectedRoute>
+                  <CorbeillePage />
+                </ProtectedRoute>
+              } />
+            </Routes>
           </BrowserRouter>
           <ToastContainer />
         </AuthProvider>

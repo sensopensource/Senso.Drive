@@ -1,11 +1,9 @@
 import { useState, useEffect, type ChangeEvent } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import { useDocuments } from "../hooks/useDocuments"
-import { useSearchDocuments } from "../hooks/useSearchDocuments"
-import { useDebounce } from "../hooks/useDebounce"
+import { useSearchDocuments, type SearchFilters } from "../hooks/useSearchDocuments"
 import { useCategories } from "../hooks/useCategories"
 import { useUpdateDocument } from "../hooks/useUpdateDocument"
-import { useSearch } from "../contexts/SearchContext"
 import { getAncestors, getDirectChildren } from "../lib/categoriesTree"
 import DocumentsTable from "../components/DocumentsTable"
 import AppShell from "../components/AppShell"
@@ -20,21 +18,36 @@ function DocumentsPage() {
   const [page, setPage] = useState(1)
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Filtre cat = lecture URL ?cat=<id> (source de verite unique)
+  // Filtre cat (navigation par dossier) = lecture URL ?cat=<id>
   const filterCategorie = (() => {
     const v = searchParams.get('cat')
     return v ? Number(v) : null
   })()
 
-  const { query: searchQuery } = useSearch()
-  const debouncedQuery = useDebounce(searchQuery, 300)
+  // Recherche : query + filtres lus depuis l'URL (pousses par la TopBar avec navigate)
+  const searchQuery = searchParams.get('query') ?? ''
+  const searchFilters: SearchFilters = {
+    type_fichier: searchParams.get('type_fichier'),
+    auteur: searchParams.get('auteur'),
+    id_categorie: searchParams.get('id_categorie') ? Number(searchParams.get('id_categorie')) : null,
+    id_tags: searchParams.getAll('id_tags').map(Number),
+    date_debut: searchParams.get('date_debut'),
+    date_fin: searchParams.get('date_fin'),
+  }
+  const isSearchMode = (
+    searchQuery.length > 0
+    || !!searchFilters.type_fichier
+    || !!searchFilters.auteur
+    || searchFilters.id_categorie != null
+    || (searchFilters.id_tags?.length ?? 0) > 0
+    || !!searchFilters.date_debut
+    || !!searchFilters.date_fin
+  )
 
   const { categories, updateCategorie } = useCategories()
   const { updateDocument } = useUpdateDocument()
   const { documents, total, isLoading: isLoadingAll, error: errorAll } = useDocuments(page, SIZE, filterCategorie)
-  const { results, isLoading: isLoadingSearch, error: errorSearch } = useSearchDocuments(debouncedQuery)
-
-  const isSearchMode = debouncedQuery.length > 0
+  const { results, isLoading: isLoadingSearch, error: errorSearch } = useSearchDocuments(searchQuery, searchFilters)
   const items = isSearchMode ? results : documents
   const isLoading = isSearchMode ? isLoadingSearch : isLoadingAll
   const error = isSearchMode ? errorSearch : errorAll
@@ -114,7 +127,7 @@ function DocumentsPage() {
             <button onClick={goToRoot} className="hover:text-bright transition-colors">Senso</button>
             <span className="text-line2">/</span>
             {isSearchMode ? (
-              <span className="text-soft truncate">Recherche : {debouncedQuery}</span>
+              <span className="text-soft truncate">Recherche : {searchQuery}</span>
             ) : ancestors.length === 0 ? (
               <span className="text-soft">Tous mes documents</span>
             ) : (
@@ -142,7 +155,7 @@ function DocumentsPage() {
           </h1>
           <p className="text-[12px] text-soft mt-1">
             {isSearchMode
-              ? `${results.length} ${results.length > 1 ? 'résultats' : 'résultat'} pour « ${debouncedQuery} »`
+              ? `${results.length} ${results.length > 1 ? 'résultats' : 'résultat'} pour « ${searchQuery} »`
               : (
                 <>
                   {total} {total > 1 ? 'fichiers' : 'fichier'}
@@ -203,7 +216,7 @@ function DocumentsPage() {
               </span>
               <p className="font-body text-sm text-soft">
                 {isSearchMode
-                  ? `Aucun résultat pour « ${debouncedQuery} ».`
+                  ? `Aucun résultat pour « ${searchQuery} ».`
                   : filterCategorie != null
                     ? 'Aucun document dans ce dossier.'
                     : 'Votre drive est vide.'}
