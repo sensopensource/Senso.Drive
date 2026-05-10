@@ -430,16 +430,6 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
               )}
             </div>
 
-            {/* Content preview */}
-            {displayedVersion?.apercu_contenu && (
-              <div className="px-5 py-4 hair-b">
-                <div className="section-label mb-3">Aperçu{isViewingArchived && displayedVersion ? ` · v${displayedVersion.numero}` : ''}</div>
-                <div className="hair p-3 bg-ink/40 font-mono text-[10.5px] text-soft leading-[1.7] whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-                  {displayedVersion.apercu_contenu}
-                </div>
-              </div>
-            )}
-
             {/* Versions timeline */}
             <div className="px-5 py-4 hair-b">
               <div className="flex items-center justify-between mb-4">
@@ -496,6 +486,16 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                 })}
               </ol>
             </div>
+
+            {/* Content preview */}
+            {displayedVersion?.apercu_contenu && (
+              <div className="px-5 py-4 hair-b">
+                <div className="section-label mb-3">Aperçu{isViewingArchived && displayedVersion ? ` · v${displayedVersion.numero}` : ''}</div>
+                <div className="hair p-3 bg-ink/40 font-mono text-[10.5px] text-soft leading-[1.7] whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+                  {displayedVersion.apercu_contenu}
+                </div>
+              </div>
+            )}
 
             {/* Metadata */}
             <div className="px-5 py-4 hair-b">
