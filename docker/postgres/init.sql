@@ -27,8 +27,10 @@ CREATE TABLE categories (
     nom TEXT NOT NULL,
     id_utilisateur int REFERENCES utilisateurs(id),
     id_parent int REFERENCES categories(id) ON DELETE CASCADE,
+    privee BOOLEAN NOT NULL DEFAULT FALSE,
     -- meme nom autorise dans des dossiers parents differents
     CONSTRAINT unique_cat_nom_user_parent UNIQUE (nom, id_utilisateur, id_parent)
+    
 );
 
 

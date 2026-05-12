@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Column, Integer, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, backref
 from app.database import Base
 
@@ -9,6 +9,7 @@ class Categorie(Base):
     nom = Column(Text, nullable=False)
     id_parent = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"))
     id_utilisateur = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
+    privee = Column(Boolean, nullable=False, default=False)
 
     # Relation auto-référente : enfants d'une catégorie
     # remote_side sur le parent → enfants pointe bien vers les descendants

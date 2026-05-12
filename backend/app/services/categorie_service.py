@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_, select
 from datetime import datetime, timezone
 from fastapi import HTTPException
 
@@ -48,6 +48,44 @@ def _validate_parent(db: Session,
     ).first()
     if not parent:
         raise HTTPException(status_code=404, detail="Dossier parent introuvable")
+
+
+def _branches_privees_cte(id_utilisateur: int):
+    base = (
+        select(Categorie.id)
+        .where(
+            Categorie.id_utilisateur == id_utilisateur,
+            Categorie.privee.is_(True),
+        )
+        .cte("branches_privees", recursive=True)
+    )
+    enfants = (
+        select(Categorie.id)
+        .where(
+            Categorie.id_parent == base.c.id,
+            Categorie.id_utilisateur == id_utilisateur,
+        )
+    )
+    return base.union_all(enfants)
+
+
+def list_documents_visibles_pour_agent(db: Session,
+                                       id_utilisateur: int) -> list[Document]:
+    branches = _branches_privees_cte(id_utilisateur)
+    ids_privees = select(branches.c.id)
+
+    return (
+        db.query(Document)
+        .filter(
+            Document.id_utilisateur == id_utilisateur,
+            Document.deleted_at.is_(None),
+            or_(
+                Document.id_categorie.is_(None),
+                ~Document.id_categorie.in_(ids_privees),
+            ),
+        )
+        .all()
+    )
 
 
 def _get_descendant_ids(db: Session,
@@ -103,7 +141,8 @@ def patch_categorie(db: Session,
                     id_utilisateur: int,
                     nom: str | None = None,
                     id_parent: int | None = None,
-                    update_parent: bool = False) -> Categorie:
+                    update_parent: bool = False,
+                    privee: bool | None = None) -> Categorie:
     """
     Modifie nom et/ou id_parent.
     update_parent=True signale qu'on veut explicitement modifier le parent
@@ -118,6 +157,9 @@ def patch_categorie(db: Session,
 
     if nom is not None:
         categorie.nom = nom
+
+    if privee is not None:
+        categorie.privee = privee
 
     if update_parent:
         # On ne peut pas etre son propre parent

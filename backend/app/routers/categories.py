@@ -44,6 +44,7 @@ def modifier_categorie(id_categorie: int,
         nom=payload.nom,
         id_parent=payload.id_parent,
         update_parent=update_parent,
+        privee=payload.privee,
     )
     return categorie
 
