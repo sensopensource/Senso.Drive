@@ -26,7 +26,7 @@ def list_categories(id_utilisateur: int,
     )
 
     return [
-        CategorieRead(id=cat.id, nom=cat.nom, id_parent=cat.id_parent, count=count)
+        CategorieRead(id=cat.id, nom=cat.nom, id_parent=cat.id_parent, count=count,privee=cat.privee)
         for cat, count in rows
     ]
 
@@ -110,9 +110,13 @@ def _get_descendant_ids(db: Session,
 def create_categorie(db: Session,
                      nom: str,
                      id_utilisateur: int,
-                     id_parent: int | None = None) -> Categorie:
+                     id_parent: int | None = None,
+                     privee: bool = False) -> Categorie:
     _validate_parent(db, id_parent, id_utilisateur)
-    categorie = Categorie(nom=nom, id_utilisateur=id_utilisateur, id_parent=id_parent)
+    categorie = Categorie(nom=nom,
+                          id_utilisateur=id_utilisateur,
+                          id_parent=id_parent,
+                          privee=privee)
     db.add(categorie)
     db.commit()
     db.refresh(categorie)

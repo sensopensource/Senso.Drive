@@ -26,6 +26,7 @@ def creer_categorie(payload: CategorieCreate,
         nom=payload.nom,
         id_utilisateur=current_user.id,
         id_parent=payload.id_parent,
+        privee=payload.privee,
     )
     return categorie
 
