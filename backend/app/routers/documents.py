@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query, Request
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Depends, Form, Query, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
@@ -11,6 +11,7 @@ from app.models import Utilisateur
 from datetime import date
 
 
+
 def _client_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
@@ -18,8 +19,9 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 # lutilisateur envoie une requette HTTP avec ContentType multipart pr le pdf,cest pour ca qu'on passe par File() et Form()
-@router.post("/", response_model=DocumentRead)
+@router.post("/", response_model=DocumentRead,)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     request: Request,
     file: UploadFile = File(...),
     titre: str | None = Form(None),
@@ -28,7 +30,7 @@ async def upload_document(
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(require_user)):
 
-    # Si l'user n'a pas choisi de categorie, on utilise "Non classe"
+
     if id_categorie is None:
         default = categorie_service.get_or_create_default_categorie(
             db=db,
@@ -36,7 +38,7 @@ async def upload_document(
         )
         id_categorie = default.id
     else:
-        # On verifie que la categorie existe ET appartient bien a l'user
+       
         categorie = db.query(Categorie).filter(
             Categorie.id == id_categorie,
             Categorie.id_utilisateur == current_user.id,
@@ -61,6 +63,9 @@ async def upload_document(
         details=f"document_id={document.id} titre={document.titre}",
         adresse_ip=_client_ip(request),
     )
+    background_tasks.add_task(document_service.resume_background,
+                              document.id,
+                              current_user.id)
     return document
 
 
@@ -260,11 +265,13 @@ def download_document(document_id: int,
 
 @router.post("/{document_id}/versions", response_model=DocumentRead)
 async def upload_nouvelle_version(
+    background_tasks: BackgroundTasks,
     document_id: int,
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(require_user),
+    
 ):
     file_bytes = await file.read()
     document = document_service.add_version(
@@ -283,6 +290,9 @@ async def upload_nouvelle_version(
         details=f"document_id={document_id}",
         adresse_ip=_client_ip(request),
     )
+    background_tasks.add_task(document_service.resume_background,
+                              document.id,
+                              current_user.id)
     return document
 
 

@@ -408,7 +408,7 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                    onClick={() => analyserDocument(isViewingArchived && displayedVersion ? displayedVersion.numero : undefined)}
                    disabled={isAnalysing}
                    className="btn-ghost flex items-center gap-1.5 disabled:opacity-40">
-                    {isAnalysing ? 'Analyse…' : displayedVersion?.resume_llm ? 'Re-analyser' : 'Analyser'}
+                    {isAnalysing ? 'Génération…' : displayedVersion?.resume_llm ? 'Régénérer le résumé' : 'Générer le résumé'}
                   </button>
 
               </div>

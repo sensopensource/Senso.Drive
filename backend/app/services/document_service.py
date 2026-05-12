@@ -6,8 +6,6 @@ from sqlalchemy.orm import Session,selectinload
 from sqlalchemy import func,or_
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
-
 from app.models.documents import Document
 from app.models.versions import Version
 from app.models.categories import Categorie
@@ -17,6 +15,8 @@ from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
 from datetime import date
 from app.models.tags import Tag
+from app.database import SessionLocal
+from app.services.log_service import log_action
 
 
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
@@ -634,3 +634,18 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int):
     db.commit()
     db.refresh(version)
     return resume
+
+def resume_background(document_id: int, id_utilisateur: int):
+    db = SessionLocal()
+    try:
+        analyser_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+    except Exception as e:
+        log_action(
+            db=db,
+            action="document.resume.auto",
+            details=f"document_id={document_id} erreur={e}",
+            id_utilisateur=id_utilisateur,
+        )
+    finally:
+        db.close()
+
