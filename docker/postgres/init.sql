@@ -123,7 +123,7 @@ VALUES ('Non categorise');
 
 
 CREATE INDEX idx_suggestions_id_utilisateur 
-ON suggestions(id_utilisateur);
+ON suggestions(id_utilisateur,status);
 
 
 CREATE INDEX idx_documents_search_vector
