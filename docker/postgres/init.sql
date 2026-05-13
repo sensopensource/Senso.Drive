@@ -105,12 +105,25 @@ CREATE TABLE historiques_recherches(
     nb_resultats int NOT NULL
 );
 
+CREATE TABLE suggestions(
+    id SERIAL PRIMARY KEY,
+    id_utilisateur int REFERENCES utilisateurs(id) NOT NULL,
+    type TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    statut TEXT NOT NULL DEFAULT 'en_attente',
+    raison_refus TEXT,
+    date_creation TIMESTAMPTZ DEFAULT NOW(),
+    date_traitement TIMESTAMPTZ
+);
 
 
 INSERT INTO categories (nom)
 VALUES ('Non categorise');
 
 
+
+CREATE INDEX idx_suggestions_id_utilisateur 
+ON suggestions(id_utilisateur);
 
 
 CREATE INDEX idx_documents_search_vector
