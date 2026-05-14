@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.config import ANTHROPIC_API_KEY
 from app.models.categories import Categorie
 from app.services import categorie_service
-from app.models.suggestions import Suggestion 
+from app.models.suggestions import Suggestion
 from app.models.documents import Document
 from app.models.tags import Tag
 from app.services import document_service, tag_service
@@ -16,7 +16,6 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 def collect_context(db: Session, id_utilisateur: int) -> list[dict]:
       documents = categorie_service.list_documents_visibles_pour_agent(db, id_utilisateur)
 
-     
       categories = db.query(Categorie).filter(Categorie.id_utilisateur == id_utilisateur).all()
 
       cat_par_id = {}
@@ -28,7 +27,6 @@ def collect_context(db: Session, id_utilisateur: int) -> list[dict]:
 
           derniere_version = max(doc.versions, key=lambda v: v.numero)
 
-          
           if derniere_version.resume_llm:
               contenu = f"Résumé : {derniere_version.resume_llm}"
           else:
@@ -48,6 +46,16 @@ def collect_context(db: Session, id_utilisateur: int) -> list[dict]:
           })
 
       return contexte
+
+
+def collect_categories(db: Session, id_utilisateur: int) -> list[dict]:
+    categories = db.query(Categorie).filter(Categorie.id_utilisateur == id_utilisateur,
+                                            Categorie.privee.is_(False)).all()
+    categories_list = []
+    for c in categories:
+        categories_list.append({"id": c.id, "nom": c.nom,"parent_id": c.id_parent})
+    return categories_list
+
 
 SUGGESTIONS_TOOL = {"name": "submit_suggestions",
                     "description": "Soumet les suggestions d'organisation à l'utilisateur.",
@@ -112,32 +120,35 @@ Utilise l'outil submit_suggestions pour répondre.
 
                  """
 
+
 def call_agent(documents: list[dict], categories: list[dict]) -> list[dict]:
-   
+
     user_message = ( f"Voici la bibiliotheque de l'utilisateur:\n\n"
                      f"Documents : {documents}\n\n"
                      f"Catégories : {categories}\n\n"
                      f"analyse cette bibliotheque et propose 5 suggestion via l'outil submit_suggestions pour aider l'utilisateur a mieux organiser sa bibliotheque.")
-    
+
     response = client.messages.create(model="claude-haiku-4-5-20251001",
                                       max_tokens=3333,
                                       system= PROMPT_SYSTEME,
                                       tools=[SUGGESTIONS_TOOL],
                                       tool_choice={"type":"tool","name":"submit_suggestions"},
                                       messages=[{"role": "user", "content": user_message}])
-    
+
     for block in response.content:
         if block.type == "tool_use" and block.name == "submit_suggestions":
             return block.input["suggestions"]
-        
+
     return []
 
-def jaccard(set1: set, set2: set) -> float: 
+
+def jaccard(set1: set, set2: set) -> float:
     intersection = set1 & set2
     union = set1 | set2
     if not union:
         return 0.0
     return len(intersection) / len(union)
+
 
 def filtrer_suggestions_refusees(db: Session,id_utilisateur: int, nouvelles_suggestions: list[dict]) -> list[dict]:
     suggestions_refusees = ( db.query(Suggestion)
@@ -155,9 +166,30 @@ def filtrer_suggestions_refusees(db: Session,id_utilisateur: int, nouvelles_sugg
                 a_rejeter = True
                 break
         if not a_rejeter:
-            suggestions_a_retenir.append(n_s)   
+            suggestions_a_retenir.append(n_s)
     return suggestions_a_retenir
-              
+
+
+def analyser_bibliotheque(db: Session, id_utilisateur: int) -> list[Suggestion]:
+    contexte = collect_context(db, id_utilisateur)
+    categories = collect_categories(db, id_utilisateur)
+    suggestions_brutes = call_agent(contexte, categories)
+    suggestions_filtrees = filtrer_suggestions_refusees(db, id_utilisateur, suggestions_brutes)
+
+    suggestions_a_enregistrer = []
+    for s in suggestions_filtrees:
+        payload = dict(s)
+        del payload["type"]
+        suggestion = Suggestion(id_utilisateur=id_utilisateur,
+                                type=s["type"],
+                                payload=payload)
+        db.add(suggestion)
+        suggestions_a_enregistrer.append(suggestion)
+    db.commit()
+    for suggestion in suggestions_a_enregistrer:
+        db.refresh(suggestion)
+    return suggestions_a_enregistrer
+
 
 def appliquer_suggestion(db: Session, suggestion: Suggestion):
     type_suggestion = suggestion.type
@@ -189,6 +221,7 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                 doc.tags.append(tag)
         db.commit()
 
+
 def valider_suggestion(db: Session, suggestion: Suggestion) -> Suggestion:
     appliquer_suggestion(db, suggestion)
     suggestion.statut = "validee"
@@ -197,9 +230,28 @@ def valider_suggestion(db: Session, suggestion: Suggestion) -> Suggestion:
     db.commit()
     return suggestion
 
+
 def refuser_suggestion(db: Session, suggestion: Suggestion,raison_refus: str | None) -> Suggestion:
     suggestion.statut = "refusee"
     suggestion.raison_refus = raison_refus
     suggestion.date_traitement = datetime.now(timezone.utc)
     db.commit()
+    return suggestion
+
+
+def lister_suggestions_en_attente(db: Session, id_utilisateur: int) -> list[Suggestion]:
+    return ( db.query(Suggestion)
+               .filter(Suggestion.id_utilisateur == id_utilisateur,
+                       Suggestion.statut == "en_attente")
+               .order_by(Suggestion.date_creation.desc())
+               .all() )
+
+
+def get_suggestion(db: Session, id_suggestion: int, id_utilisateur: int) -> Suggestion | None:
+    suggestion = ( db.query(Suggestion)
+                     .filter(Suggestion.id == id_suggestion,
+                             Suggestion.id_utilisateur == id_utilisateur)
+                     .first() )
+    if not suggestion:
+        return None
     return suggestion
