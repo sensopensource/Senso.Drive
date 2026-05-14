@@ -4,8 +4,11 @@ from sqlalchemy.orm import Session
 from app.core.config import ANTHROPIC_API_KEY
 from app.models.categories import Categorie
 from app.services import categorie_service
-from app.models.suggestions import Suggestion
-
+from app.models.suggestions import Suggestion 
+from app.models.documents import Document
+from app.models.tags import Tag
+from app.services import document_service, tag_service
+from datetime import datetime, timezone
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -155,4 +158,48 @@ def filtrer_suggestions_refusees(db: Session,id_utilisateur: int, nouvelles_sugg
             suggestions_a_retenir.append(n_s)   
     return suggestions_a_retenir
               
-    
+
+def appliquer_suggestion(db: Session, suggestion: Suggestion):
+    type_suggestion = suggestion.type
+    id_utilisateur = suggestion.id_utilisateur
+    payload = suggestion.payload
+
+    if type_suggestion == "regroupement":
+        if payload["categorie_cible_id"] is None:
+            categorie = categorie_service.create_categorie(db, nom=payload["categorie_cible_nom"], id_utilisateur=id_utilisateur)
+            cat_id = categorie.id
+        else:
+            cat_id = payload["categorie_cible_id"]
+
+        documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
+                                              Document.id_utilisateur == id_utilisateur).all()
+        for doc in documents:
+            doc.id_categorie = cat_id
+        db.commit()
+    elif type_suggestion == "suppression":
+        for doc_id in payload["document_ids"]:
+            document_service.mettre_corbeille(db, doc_id, id_utilisateur)
+    elif type_suggestion == "tag":
+        documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
+                                              Document.id_utilisateur == id_utilisateur).all()
+        tag_read = tag_service.create_tag(db, payload["tag_name"], id_utilisateur)
+        tag = db.query(Tag).filter(Tag.id == tag_read.id).first()
+        for doc in documents:
+            if tag not in doc.tags:
+                doc.tags.append(tag)
+        db.commit()
+
+def valider_suggestion(db: Session, suggestion: Suggestion) -> Suggestion:
+    appliquer_suggestion(db, suggestion)
+    suggestion.statut = "validee"
+    suggestion.date_traitement = datetime.now(timezone.utc)
+
+    db.commit()
+    return suggestion
+
+def refuser_suggestion(db: Session, suggestion: Suggestion,raison_refus: str | None) -> Suggestion:
+    suggestion.statut = "refusee"
+    suggestion.raison_refus = raison_refus
+    suggestion.date_traitement = datetime.now(timezone.utc)
+    db.commit()
+    return suggestion
