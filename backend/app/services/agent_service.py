@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.config import ANTHROPIC_API_KEY
 from app.models.categories import Categorie
 from app.services import categorie_service
+from app.models.suggestions import Suggestion
 
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -64,7 +65,7 @@ SUGGESTIONS_TOOL = {"name": "submit_suggestions",
                                                                                              "tag_name": {"type": ["string", "null"],
                                                                                                           "description": "Pour 'tag' : nom du tag a ajouter.",},},
                                                                      "required": ["type", "explication", "document_ids"],},}},
-                      "required": ["suggestions"],},}
+                     "required": ["suggestions"],},}
 
 PROMPT_SYSTEME = """
 
@@ -127,3 +128,31 @@ def call_agent(documents: list[dict], categories: list[dict]) -> list[dict]:
             return block.input["suggestions"]
         
     return []
+
+def jaccard(set1: set, set2: set) -> float: 
+    intersection = set1 & set2
+    union = set1 | set2
+    if not union:
+        return 0.0
+    return len(intersection) / len(union)
+
+def filtrer_suggestions_refusees(db: Session,id_utilisateur: int, nouvelles_suggestions: list[dict]) -> list[dict]:
+    suggestions_refusees = ( db.query(Suggestion)
+                               .filter(Suggestion.id_utilisateur == id_utilisateur,
+                                       Suggestion.statut == "refusee")
+                               .all() )
+    suggestions_a_retenir = []
+    for n_s in nouvelles_suggestions:
+        a_rejeter = False
+        for s_r in suggestions_refusees:
+            if n_s["type"] != s_r.type:
+                continue
+            score = jaccard(set(n_s["document_ids"]), set(s_r.payload["document_ids"]))
+            if score >= 0.7:
+                a_rejeter = True
+                break
+        if not a_rejeter:
+            suggestions_a_retenir.append(n_s)   
+    return suggestions_a_retenir
+              
+    
