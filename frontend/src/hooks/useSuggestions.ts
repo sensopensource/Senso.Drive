@@ -1,24 +1,20 @@
 import { apiFetch } from "../api"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-export type SuggestionDoc = {
-  type: string
-  title: string
-  cat: string
-}
+export type SuggestionType = 'regroupement' | 'suppression' | 'tag'
 
 export type SuggestionPayload = {
-  type: string
-  title: string
-  why: string
-  docs: SuggestionDoc[]
-  reorgDesc?: string
+  explication: string
+  document_ids: number[]
+  categorie_cible_id?: number | null
+  categorie_cible_nom?: string | null
+  tag_name?: string | null
 }
 
 export type Suggestion = {
   id: number
   id_utilisateur: number
-  type: string
+  type: SuggestionType
   payload: SuggestionPayload
   statut: 'en_attente' | 'validee' | 'refusee'
   raison_refus: string | null

@@ -3,6 +3,7 @@ import TopBar from "./TopBar"
 import AppSidebar from "./AppSidebar"
 import AgentAnalysisToast from "./AgentAnalysisToast"
 import AgentEmptyToast from "./AgentEmptyToast"
+import SuggestionsModal from "./SuggestionsModal"
 import { AgentProvider } from "../contexts/AgentContext"
 
 type Props = {
@@ -22,6 +23,7 @@ function AppShell({ children }: Props) {
         </div>
         <AgentAnalysisToast />
         <AgentEmptyToast />
+        <SuggestionsModal />
       </div>
     </AgentProvider>
   )
