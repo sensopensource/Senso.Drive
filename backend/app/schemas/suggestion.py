@@ -1,10 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Literal
 
-class SuggestionCreate(BaseModel):
-    type: Literal['regroupement', 'suppression', 'tag']
-    payload: dict
 
 class SuggestionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -17,3 +13,7 @@ class SuggestionRead(BaseModel):
     raison_refus: str | None = None
     date_creation: datetime
     date_traitement: datetime | None = None
+
+class SuggestionRefus(BaseModel):
+    raison_refus: str | None = None
+    
