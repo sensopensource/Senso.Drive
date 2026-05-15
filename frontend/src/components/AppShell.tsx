@@ -2,6 +2,7 @@ import { type ReactNode } from "react"
 import TopBar from "./TopBar"
 import AppSidebar from "./AppSidebar"
 import AgentAnalysisToast from "./AgentAnalysisToast"
+import AgentEmptyToast from "./AgentEmptyToast"
 import { AgentProvider } from "../contexts/AgentContext"
 
 type Props = {
@@ -20,6 +21,7 @@ function AppShell({ children }: Props) {
           </main>
         </div>
         <AgentAnalysisToast />
+        <AgentEmptyToast />
       </div>
     </AgentProvider>
   )
