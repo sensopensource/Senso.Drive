@@ -9,6 +9,7 @@ import { buildTree } from "../lib/categoriesTree"
 import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "../lib/dnd"
 import type { CategorieNode } from "../types"
 import NewCategorieModal from "./NewCategorieModal"
+import { useAgent } from "../contexts/AgentContext"
 
 const TYPE_DOTS = ["bg-type-pdf", "bg-type-docx", "bg-type-txt", "bg-type-md", "bg-type-ai"]
 
@@ -238,6 +239,7 @@ function AppSidebar() {
   const { deleteCategorie, isPending: isDeleting } = useDeleteCategorie()
   const { total: totalDocs } = useDocuments(1, 1, null)
   const { total: totalCorbeille } = useCorbeille(1, 1)
+  const { pendingCount, startAnalysis, openSuggestions, analysisRunning } = useAgent()
   const [newCatTarget, setNewCatTarget] = useState<NewCatTarget>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
@@ -335,6 +337,45 @@ function AppSidebar() {
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto py-2">
+
+        {/* Section Agent IA */}
+        <div className="px-3 py-1.5">
+          <div className="section-label px-2 mb-1 flex items-center justify-between">
+            <span className="text-type-ai">Agent IA</span>
+            <span className="material-symbols-outlined text-[11px] text-type-ai">auto_awesome</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={startAnalysis}
+            disabled={analysisRunning}
+            className="sb-agent-link primary"
+          >
+            <span className="material-symbols-outlined text-[15px] text-type-ai">auto_fix</span>
+            <span className="flex-1">Analyser ma bibliothèque</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openSuggestions}
+            className="sb-agent-link"
+          >
+            <span className="material-symbols-outlined text-[15px] text-mute">lightbulb</span>
+            <span className="flex-1">Suggestions</span>
+            {pendingCount > 0 && (
+              <span className="font-mono text-[10px] text-type-ai">{pendingCount}</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="sb-agent-link"
+          >
+            <span className="material-symbols-outlined text-[15px] text-mute">tune</span>
+            <span className="flex-1">Paramètres</span>
+          </button>
+        </div>
 
         <div className="px-3 py-1.5">
           <div className="section-label px-2 mb-1">Espace</div>
