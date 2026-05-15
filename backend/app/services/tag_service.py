@@ -67,10 +67,8 @@ def assign_tags_to_document(
     tag_ids: list[int],
     id_utilisateur: int,
 ) -> None:
-    document = db.query(Document).filter(
-        Document.id == id_document,
-        Document.id_utilisateur == id_utilisateur,
-    ).first()
+    document = db.query(Document).filter(Document.id == id_document,
+                                         Document.id_utilisateur == id_utilisateur).first()
     if not document:
         return
 
