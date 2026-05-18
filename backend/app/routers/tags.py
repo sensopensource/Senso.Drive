@@ -3,6 +3,7 @@ from app.models.utilisateurs import Utilisateur
 from app.core.dependencies import require_user
 from app.schemas.tag import TagCreate, TagRead
 from app.services import tag_service, log_service
+from app.models.tags import Tag
 from sqlalchemy.orm import Session
 from app.database import get_db
 
@@ -45,9 +46,29 @@ def create_tag(
 @router.delete("/{id_tag}")
 def delete_tag(
     id_tag: int,
+    request: Request,
     current_user: Utilisateur = Depends(require_user),
     db: Session = Depends(get_db)
 ):
+    tag = db.query(Tag).filter(
+        Tag.id == id_tag,
+        Tag.id_utilisateur == current_user.id,
+    ).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag non trouve")
+
+    nom_tag = tag.name
+
     if not tag_service.delete_tag(db=db, id_tag=id_tag, id_utilisateur=current_user.id):
         raise HTTPException(status_code=404, detail="Tag non trouve")
+
+    log_service.log_action(
+        db=db,
+        niveau="info",
+        action="tag.delete",
+        message=f"Tag '{nom_tag}' supprime",
+        contexte={"id_tag": id_tag, "name": nom_tag},
+        id_utilisateur=current_user.id,
+        adresse_ip=_client_ip(request),
+    )
     return {"message": "tag supprime avec succes"}
