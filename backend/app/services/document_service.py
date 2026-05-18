@@ -642,13 +642,23 @@ def resume_background(document_id: int, id_utilisateur: int):
     db = SessionLocal()
     try:
         analyser_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
+        log_action(
+            db=db,
+            niveau="ok",
+            action="document.resume.auto",
+            message=f"Resume genere pour le document #{document_id}",
+            contexte={"id_document": document_id},
+            id_utilisateur=id_utilisateur,
+        )
     except Exception as e:
         log_action(
             db=db,
             niveau="err",
-            action="document.resume.auto",
-            message=f"Echec resume auto du document #{document_id}",
-            contexte={"id_document": document_id, "erreur": str(e)},
+            action="llm.error",
+            message=f"Echec resume auto du document #{document_id} : {e}",
+            contexte={"source":      "resume",
+                      "id_document": document_id,
+                      "erreur":      str(e)},
             id_utilisateur=id_utilisateur,
         )
     finally:

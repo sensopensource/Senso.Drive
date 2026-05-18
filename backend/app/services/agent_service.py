@@ -7,7 +7,7 @@ from app.services import categorie_service
 from app.models.suggestions import Suggestion
 from app.models.documents import Document
 from app.models.tags import Tag
-from app.services import document_service, tag_service
+from app.services import document_service, tag_service, log_service
 from datetime import datetime, timezone
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -267,26 +267,97 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
     if type_suggestion == "regroupement":
         cat_id = payload.get("categorie_cible_id")
         if cat_id is None:
-            categorie = categorie_service.create_categorie(db, nom=payload.get("categorie_cible_nom"), id_utilisateur=id_utilisateur)
+            categorie = categorie_service.create_categorie(db,
+                                                           nom=payload.get("categorie_cible_nom"),
+                                                           id_utilisateur=id_utilisateur)
             cat_id = categorie.id
+            log_service.log_action(
+                db=db,
+                niveau="ok",
+                action="agent.categorie.creee",
+                message=f"Agent a cree la categorie '{categorie.nom}'",
+                contexte={"id_categorie":  categorie.id,
+                          "nom":           categorie.nom,
+                          "id_suggestion": suggestion.id},
+                id_utilisateur=id_utilisateur,
+            )
 
         documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
                                               Document.id_utilisateur == id_utilisateur).all()
         for doc in documents:
             doc.id_categorie = cat_id
         db.commit()
+
+        log_service.log_action(
+            db=db,
+            niveau="info",
+            action="agent.documents.deplaces",
+            message=f"Agent a deplace {len(documents)} document(s) vers la categorie #{cat_id}",
+            contexte={"id_categorie_cible": cat_id,
+                      "id_documents":       [doc.id for doc in documents],
+                      "nb_documents":       len(documents),
+                      "id_suggestion":      suggestion.id},
+            id_utilisateur=id_utilisateur,
+        )
+
     elif type_suggestion == "suppression":
+        ids_traites = []
         for doc_id in payload["document_ids"]:
-            document_service.mettre_corbeille(db, doc_id, id_utilisateur)
+            if document_service.mettre_corbeille(db, doc_id, id_utilisateur):
+                ids_traites.append(doc_id)
+
+        log_service.log_action(
+            db=db,
+            niveau="info",
+            action="agent.documents.corbeille",
+            message=f"Agent a mis {len(ids_traites)} document(s) a la corbeille",
+            contexte={"id_documents":  ids_traites,
+                      "nb_documents":  len(ids_traites),
+                      "id_suggestion": suggestion.id},
+            id_utilisateur=id_utilisateur,
+        )
+
     elif type_suggestion == "tag":
-        documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
-                                              Document.id_utilisateur == id_utilisateur).all()
+        nom_tag = payload.get("tag_name").strip()
+        tag_existait = db.query(Tag).filter(Tag.name == nom_tag,
+                                            Tag.id_utilisateur == id_utilisateur).first() is not None
+
         tag_read = tag_service.create_tag(db, payload.get("tag_name"), id_utilisateur)
         tag = db.query(Tag).filter(Tag.id == tag_read.id).first()
+
+        if not tag_existait:
+            log_service.log_action(
+                db=db,
+                niveau="ok",
+                action="agent.tag.cree",
+                message=f"Agent a cree le tag '{tag.name}'",
+                contexte={"id_tag":        tag.id,
+                          "name":          tag.name,
+                          "id_suggestion": suggestion.id},
+                id_utilisateur=id_utilisateur,
+            )
+
+        documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
+                                              Document.id_utilisateur == id_utilisateur).all()
+        docs_tagges = []
         for doc in documents:
             if tag not in doc.tags:
                 doc.tags.append(tag)
+                docs_tagges.append(doc.id)
         db.commit()
+
+        log_service.log_action(
+            db=db,
+            niveau="info",
+            action="agent.tag.applique",
+            message=f"Agent a applique le tag '{tag.name}' a {len(docs_tagges)} document(s)",
+            contexte={"id_tag":        tag.id,
+                      "name":          tag.name,
+                      "id_documents":  docs_tagges,
+                      "nb_documents":  len(docs_tagges),
+                      "id_suggestion": suggestion.id},
+            id_utilisateur=id_utilisateur,
+        )
 
 
 def valider_suggestion(db: Session, suggestion: Suggestion) -> dict:
