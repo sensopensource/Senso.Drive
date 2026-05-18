@@ -645,8 +645,10 @@ def resume_background(document_id: int, id_utilisateur: int):
     except Exception as e:
         log_action(
             db=db,
+            niveau="err",
             action="document.resume.auto",
-            details=f"document_id={document_id} erreur={e}",
+            message=f"Echec resume auto du document #{document_id}",
+            contexte={"id_document": document_id, "erreur": str(e)},
             id_utilisateur=id_utilisateur,
         )
     finally:

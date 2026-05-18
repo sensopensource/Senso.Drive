@@ -31,9 +31,11 @@ def register_utilisateur(db: Session,
 
     log_service.log_action(
         db=db,
-        id_utilisateur=new_user.id,
+        niveau="ok",
         action="auth.register",
-        details=f"Compte cree pour {email}",
+        message=f"Compte cree pour {email}",
+        contexte={"email": email},
+        id_utilisateur=new_user.id,
         adresse_ip=adresse_ip,
     )
 
@@ -49,9 +51,11 @@ def auth_utilisateur(db: Session,
     if not user:
         log_service.log_action(
             db=db,
-            id_utilisateur=None,
+            niveau="warn",
             action="auth.login.failed",
-            details=f"Email inconnu : {email}",
+            message=f"Email inconnu : {email}",
+            contexte={"email": email, "raison": "email_inconnu"},
+            id_utilisateur=None,
             adresse_ip=adresse_ip,
         )
         return None
@@ -59,18 +63,22 @@ def auth_utilisateur(db: Session,
     if not verify_password(password, user.mot_de_passe_hash):
         log_service.log_action(
             db=db,
-            id_utilisateur=user.id,
+            niveau="warn",
             action="auth.login.failed",
-            details="Mot de passe incorrect",
+            message="Mot de passe incorrect",
+            contexte={"email": email, "raison": "mot_de_passe_incorrect"},
+            id_utilisateur=user.id,
             adresse_ip=adresse_ip,
         )
         return None
 
     log_service.log_action(
         db=db,
-        id_utilisateur=user.id,
+        niveau="ok",
         action="auth.login.success",
-        details="Connexion reussie",
+        message="Connexion reussie",
+        contexte={"email": email},
+        id_utilisateur=user.id,
         adresse_ip=adresse_ip,
     )
 

@@ -58,9 +58,11 @@ async def upload_document(
     )
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="ok",
         action="document.upload",
-        details=f"document_id={document.id} titre={document.titre}",
+        message=f"Document '{document.titre}' uploade",
+        contexte={"id_document": document.id, "id_categorie": id_categorie},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     background_tasks.add_task(document_service.resume_background,
@@ -89,9 +91,11 @@ def vider_corbeille(request: Request,
     count = document_service.vider_corbeille(db=db, id_utilisateur=current_user.id)
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="warn",
         action="document.corbeille.vider",
-        details=f"{count} document(s) supprime(s) definitivement",
+        message=f"{count} document(s) supprime(s) definitivement",
+        contexte={"nb_documents": count},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return {"message": f"{count} document(s) supprime(s) definitivement"}
@@ -108,9 +112,11 @@ def restaurer_document(document_id: int,
         raise HTTPException(status_code=404, detail="Document introuvable dans la corbeille")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="info",
         action="document.restaurer",
-        details=f"document_id={document_id}",
+        message=f"Document #{document_id} restaure depuis la corbeille",
+        contexte={"id_document": document_id},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return {"message": "Document restaure"}
@@ -127,9 +133,11 @@ def delete_definitif(document_id: int,
         raise HTTPException(status_code=404, detail="Document introuvable")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="warn",
         action="document.delete_definitif",
-        details=f"document_id={document_id}",
+        message=f"Document #{document_id} supprime definitivement",
+        contexte={"id_document": document_id},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return {"message": "Document supprime definitivement"}
@@ -214,9 +222,14 @@ def patch_document(document_id: int,
         raise HTTPException(status_code=404,detail="Modification impossible")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="info",
         action="document.update",
-        details=f"document_id={document_id}",
+        message=f"Document #{document_id} modifie",
+        contexte={"id_document": document_id,
+                  "titre": document.titre,
+                  "auteur": document.auteur,
+                  "id_categorie": document.id_categorie},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return nouveau_document
@@ -233,9 +246,11 @@ def mettre_corbeille(document_id: int,
         raise HTTPException(status_code=404, detail="Document non trouve")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="info",
         action="document.corbeille",
-        details=f"document_id={document_id}",
+        message=f"Document #{document_id} mis a la corbeille",
+        contexte={"id_document": document_id},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return {"message": "Document deplace dans la corbeille"}
@@ -255,9 +270,11 @@ def download_document(document_id: int,
             raise HTTPException(status_code=404,detail="Document non trouve")
        log_service.log_action(
            db=db,
-           id_utilisateur=current_user.id,
+           niveau="info",
            action="document.download",
-           details=f"document_id={document_id} filename={fichier.filename}",
+           message=f"Telechargement de '{fichier.filename}'",
+           contexte={"id_document": document_id, "filename": fichier.filename},
+           id_utilisateur=current_user.id,
            adresse_ip=_client_ip(request),
        )
        return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)
@@ -285,9 +302,11 @@ async def upload_nouvelle_version(
         raise HTTPException(status_code=404, detail="Document introuvable")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="ok",
         action="version.upload",
-        details=f"document_id={document_id}",
+        message=f"Nouvelle version pour le document #{document_id}",
+        contexte={"id_document": document_id},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     background_tasks.add_task(document_service.resume_background,
@@ -348,9 +367,11 @@ def download_version(document_id: int,
         raise HTTPException(status_code=404, detail="Version introuvable")
     log_service.log_action(
         db=db,
-        id_utilisateur=current_user.id,
+        niveau="info",
         action="version.download",
-        details=f"document_id={document_id} numero={numero}",
+        message=f"Telechargement version #{numero} du document #{document_id}",
+        contexte={"id_document": document_id, "numero_version": numero},
+        id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
     return FileResponse(path=fichier.path, filename=fichier.filename, media_type=fichier.media_type)
