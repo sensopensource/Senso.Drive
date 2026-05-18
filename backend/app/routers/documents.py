@@ -317,14 +317,45 @@ async def upload_nouvelle_version(
 
 @router.patch("/{document_id}/tags", response_model=DocumentRead)
 def assign_tags_to_document(document_id: int,
-                           payload: DocumentTagsUpdate,
-                           db: Session = Depends(get_db),
-                           current_user: Utilisateur = Depends(require_user)):
+                            payload: DocumentTagsUpdate,
+                            request: Request,
+                            db: Session = Depends(get_db),
+                            current_user: Utilisateur = Depends(require_user)):
     document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     if not document:
         raise HTTPException(status_code=404, detail="Document non trouve")
 
-    tag_service.assign_tags_to_document(db=db, id_document=document_id, tag_ids=payload.tag_ids, id_utilisateur=current_user.id)
+    anciens_ids = {tag.id for tag in document.tags}
+    nouveaux_ids = set(payload.tag_ids)
+    ids_ajoutes = nouveaux_ids - anciens_ids
+    ids_retires = anciens_ids - nouveaux_ids
+
+    tag_service.assign_tags_to_document(db=db,
+                                        id_document=document_id,
+                                        tag_ids=payload.tag_ids,
+                                        id_utilisateur=current_user.id)
+
+    if ids_ajoutes:
+        log_service.log_action(
+            db=db,
+            niveau="info",
+            action="document.tag.add",
+            message=f"{len(ids_ajoutes)} tag(s) ajoute(s) au document #{document_id}",
+            contexte={"id_document": document_id, "id_tags": sorted(ids_ajoutes)},
+            id_utilisateur=current_user.id,
+            adresse_ip=_client_ip(request),
+        )
+    if ids_retires:
+        log_service.log_action(
+            db=db,
+            niveau="info",
+            action="document.tag.remove",
+            message=f"{len(ids_retires)} tag(s) retire(s) du document #{document_id}",
+            contexte={"id_document": document_id, "id_tags": sorted(ids_retires)},
+            id_utilisateur=current_user.id,
+            adresse_ip=_client_ip(request),
+        )
+
     updated_document = document_service.get_document(db=db, document_id=document_id, id_utilisateur=current_user.id)
     return updated_document
 
