@@ -74,13 +74,19 @@ CREATE TABLE anomalies(
 );
 
 CREATE TABLE logs(
-    id SERIAL PRIMARY KEY,
-    id_utilisateur int REFERENCES utilisateurs(id),
-    action TEXT NOT NULL,
-    details TEXT NOT NULL,
-    adresse_ip TEXT NOT NULL,
-    date_action TIMESTAMPTZ DEFAULT NOW()
+    id              SERIAL PRIMARY KEY,
+    id_utilisateur  INT REFERENCES utilisateurs(id),
+    niveau          TEXT NOT NULL CHECK (niveau IN ('info', 'ok', 'warn', 'err')),
+    action          TEXT NOT NULL,
+    message         TEXT NOT NULL,
+    contexte        JSONB,
+    adresse_ip      TEXT,
+    cree_le         TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX idx_logs_action  ON logs(action);
+CREATE INDEX idx_logs_niveau  ON logs(niveau);
+CREATE INDEX idx_logs_cree_le ON logs(cree_le DESC);
 
 CREATE TABLE tags(
     id SERIAL PRIMARY KEY,

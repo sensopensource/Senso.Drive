@@ -1,20 +1,17 @@
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
-from app.database import Base
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
+from app.database import Base
+
 
 class Log(Base):
-    __tablename__="logs"
+    __tablename__ = "logs"
 
-    id=Column(Integer,primary_key=True)
-    id_utilisateur = Column(Integer,ForeignKey('utilisateurs.id'),nullable=True)
-    action=Column(Text,nullable=False)
-    details=Column(Text,nullable=False)
-    adresse_ip=Column(Text,nullable=False)
-    date_action=Column(DateTime(timezone=True),server_default=func.now())
-
-
-
-
-
-
-    
+    id             = Column(Integer, primary_key=True)
+    id_utilisateur = Column(Integer, ForeignKey('utilisateurs.id'), nullable=True)
+    niveau         = Column(Text, nullable=False)
+    action         = Column(Text, nullable=False)
+    message        = Column(Text, nullable=False)
+    contexte       = Column(JSONB, nullable=True)
+    adresse_ip     = Column(Text, nullable=True)
+    cree_le        = Column(DateTime(timezone=True), server_default=func.now())
