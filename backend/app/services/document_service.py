@@ -613,7 +613,7 @@ def analyser_version(
     if not version:
         return None
 
-    resume = llm_service.generer_resume(version.contenu)
+    resume = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
     version.resume_llm = resume
     db.commit()
     db.refresh(version)
@@ -632,7 +632,7 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int):
     if not version:
         return None
 
-    resume = llm_service.generer_resume(version.contenu)
+    resume = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
     version.resume_llm = resume
     db.commit()
     db.refresh(version)

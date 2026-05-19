@@ -51,8 +51,7 @@ function LoginPage() {
             <div className="w-5 h-5 hair flex items-center justify-center">
               <span className="material-symbols-outlined text-[12px] text-soft">inventory_2</span>
             </div>
-            <span className="text-[13px] font-semibold tracking-tight text-bright">Senso</span>
-            <span className="text-[13px] font-mono text-mute">.Drive</span>
+            <span className="text-[13px] font-semibold tracking-tight text-bright">Senso<span className="text-[13px] font-mono text-mute">.Drive</span></span>
           </div>
           <h1 className="text-[22px] font-semibold tracking-tight text-bright">
             Bon retour

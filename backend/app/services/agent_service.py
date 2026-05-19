@@ -1,3 +1,4 @@
+import time
 import anthropic
 from sqlalchemy.orm import Session
 
@@ -7,7 +8,7 @@ from app.services import categorie_service
 from app.models.suggestions import Suggestion
 from app.models.documents import Document
 from app.models.tags import Tag
-from app.services import document_service, tag_service, log_service
+from app.services import document_service, tag_service, log_service, consommation_service
 from datetime import datetime, timezone
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -149,7 +150,7 @@ Utilise l'outil submit_suggestions pour répondre.
                  """
 
 
-def call_agent(documents: list[dict], categories: list[dict]) -> list[dict]:
+def call_agent(db: Session, id_utilisateur: int, documents: list[dict], categories: list[dict]) -> list[dict]:
 
     user_message = ( f"Voici la bibiliotheque de l'utilisateur:\n\n"
                      f"Documents : {documents}\n\n"
@@ -158,18 +159,48 @@ def call_agent(documents: list[dict], categories: list[dict]) -> list[dict]:
                      f"pour aider l'utilisateur a mieux organiser sa bibliotheque. "
                      f"Si rien ne justifie une suggestion a haute confiance, renvoie une liste vide.")
 
-    response = client.messages.create(model="claude-haiku-4-5-20251001",
-                                      max_tokens=3333,
-                                      system= PROMPT_SYSTEME,
-                                      tools=[SUGGESTIONS_TOOL],
-                                      tool_choice={"type":"tool","name":"submit_suggestions"},
-                                      messages=[{"role": "user", "content": user_message}])
+    debut = time.perf_counter()
+    modele = "claude-haiku-4-5-20251001"
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == "submit_suggestions":
-            return block.input["suggestions"]
+    try:
+        response = client.messages.create(model=modele,
+                                          max_tokens=3333,
+                                          system= PROMPT_SYSTEME,
+                                          tools=[SUGGESTIONS_TOOL],
+                                          tool_choice={"type":"tool","name":"submit_suggestions"},
+                                          messages=[{"role": "user", "content": user_message}])
+        latence_ms = int((time.perf_counter() - debut) * 1000)
 
-    return []
+        consommation_service.enregistrer(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            source="agent",
+            modele=modele,
+            tokens_in=response.usage.input_tokens,
+            tokens_out=response.usage.output_tokens,
+            latence_ms=latence_ms,
+            statut="ok",
+        )
+
+        for block in response.content:
+            if block.type == "tool_use" and block.name == "submit_suggestions":
+                return block.input["suggestions"]
+
+        return []
+
+    except Exception as e:
+        consommation_service.enregistrer(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            source="agent",
+            modele=modele,
+            tokens_in=0,
+            tokens_out=0,
+            latence_ms=int((time.perf_counter() - debut) * 1000),
+            statut="err",
+            message_erreur=str(e),
+        )
+        raise
 
 
 def jaccard(set1: set, set2: set) -> float:
@@ -241,7 +272,7 @@ def _enrichir_payload(suggestion: Suggestion, db: Session) -> dict:
 def analyser_bibliotheque(db: Session, id_utilisateur: int) -> list[dict]:
     contexte = collect_context(db, id_utilisateur)
     categories = collect_categories(db, id_utilisateur)
-    suggestions_brutes = call_agent(contexte, categories)
+    suggestions_brutes = call_agent(db, id_utilisateur, contexte, categories)
     suggestions_filtrees = filtrer_suggestions_refusees(db, id_utilisateur, suggestions_brutes)
 
     suggestions_a_enregistrer = []
