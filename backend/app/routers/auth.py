@@ -50,8 +50,24 @@ def login(
     token = create_access_token(user_id=user.id)
     return Token(access_token=token, token_type="bearer")
 
+@router.post("/logout",status_code=204)
+def logout(
+    request: Request,
+    current_user: Utilisateur = Depends(require_user),
+    db: Session = Depends(get_db)
+):
+     
+    adresse_ip = request.client.host if request.client else None
+
+    auth_service.logout_utilisateur(db=db,
+                                    id_utilisateur=current_user.id,
+                                    email=current_user.email, adresse_ip=adresse_ip)
+    
+    
 
 @router.get("/me",response_model=UtilisateurRead)
-def me(current_user: Utilisateur = Depends(require_user)):
+def me(
+    current_user: Utilisateur = Depends(require_user)
+):
     return current_user
     

@@ -5,7 +5,7 @@ import type { User } from "../types"
 // 1. Le type de ce qu'on va partager
 type AuthContextType = {
   user: User | null
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 // Le contexte (valeur par défaut = null au cas ou un composant lit sans Provider)
@@ -34,7 +34,10 @@ export function AuthProvider({ children }: ProviderProps) {
     fetchUser()
   }, [])
 
-  const logout = () => {
+  const logout =  async () => {
+    try { await apiFetch("/auth/logout", { method: "POST" }) } 
+    catch  { /* just in case quoi */ } 
+
     localStorage.removeItem('token')
     setUser(null)
     window.location.href = '/login'

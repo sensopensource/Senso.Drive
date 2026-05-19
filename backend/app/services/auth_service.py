@@ -83,3 +83,20 @@ def auth_utilisateur(db: Session,
     )
 
     return user
+
+def logout_utilisateur(db: Session,
+                       id_utilisateur: int,
+                       email: str,
+                       adresse_ip: str | None = None) -> None:
+    
+    log_service.log_action(
+        db=db,
+        niveau="info",
+        action="auth.logout",
+        message="Deconnexion reussie",
+        contexte={"email": email},
+        id_utilisateur=id_utilisateur,
+        adresse_ip=adresse_ip,
+    )
+
+    return None

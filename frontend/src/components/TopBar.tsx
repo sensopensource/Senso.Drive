@@ -13,13 +13,15 @@ import {
 const PREVIEW_LIMIT = 5
 
 function TopBar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   const debouncedQuery = useDebounce(query, 300)
   const { results, isLoading } = useSearchDocuments(debouncedQuery)
@@ -43,6 +45,23 @@ function TopBar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
+
+  // Fermer le menu user au clic en dehors
+  useEffect(() => {
+    if (!isUserMenuOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isUserMenuOpen])
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false)
+    await logout()
+  }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
@@ -225,8 +244,32 @@ function TopBar() {
         <button className="w-8 h-8 flex items-center justify-center text-mute hover:text-bright transition-colors" aria-label="Paramètres">
           <span className="material-symbols-outlined text-[18px]">settings</span>
         </button>
-        <div className="w-7 h-7 ml-2 hair bg-elev flex items-center justify-center" title={user?.email}>
-          <span className="text-[10px] font-mono text-soft">{initials}</span>
+        <div ref={userMenuRef} className="relative ml-2">
+          <button
+            onClick={() => setIsUserMenuOpen(o => !o)}
+            className="group w-7 h-7 hair bg-elev flex items-center justify-center hover:bg-panel transition-colors"
+            title={user?.email}
+            aria-label="Menu utilisateur"
+          >
+            <span className="text-[10px] font-mono text-soft group-hover:text-bright transition-colors">{initials}</span>
+          </button>
+
+          {isUserMenuOpen && (
+            <div className="absolute top-[calc(100%+4px)] right-0 w-56 hair bg-ink/98 backdrop-blur-xl shadow-lg">
+              <div className="px-4 py-3 hair-b">
+                <div className="text-[10.5px] font-mono text-mute uppercase tracking-wider mb-1">Compte</div>
+                <div className="text-[12.5px] text-bright truncate">{user?.nom}</div>
+                <div className="text-[11px] text-soft truncate">{user?.email}</div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2.5 hover:bg-elev transition-colors flex items-center gap-2 text-[12.5px] text-soft hover:text-bright"
+              >
+                <span className="material-symbols-outlined text-[14px]">logout</span>
+                Déconnexion
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
