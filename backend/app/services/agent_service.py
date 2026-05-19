@@ -259,7 +259,7 @@ def analyser_bibliotheque(db: Session, id_utilisateur: int) -> list[dict]:
     return [_enrichir_payload(s, db) for s in suggestions_a_enregistrer]
 
 
-def appliquer_suggestion(db: Session, suggestion: Suggestion):
+def appliquer_suggestion(db: Session, suggestion: Suggestion, adresse_ip: str | None = None):
     type_suggestion = suggestion.type
     id_utilisateur = suggestion.id_utilisateur
     payload = suggestion.payload
@@ -280,6 +280,7 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                           "nom":           categorie.nom,
                           "id_suggestion": suggestion.id},
                 id_utilisateur=id_utilisateur,
+                adresse_ip=adresse_ip,
             )
 
         documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
@@ -298,6 +299,7 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                       "nb_documents":       len(documents),
                       "id_suggestion":      suggestion.id},
             id_utilisateur=id_utilisateur,
+            adresse_ip=adresse_ip,
         )
 
     elif type_suggestion == "suppression":
@@ -315,6 +317,7 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                       "nb_documents":  len(ids_traites),
                       "id_suggestion": suggestion.id},
             id_utilisateur=id_utilisateur,
+            adresse_ip=adresse_ip,
         )
 
     elif type_suggestion == "tag":
@@ -335,6 +338,7 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                           "name":          tag.name,
                           "id_suggestion": suggestion.id},
                 id_utilisateur=id_utilisateur,
+                adresse_ip=adresse_ip,
             )
 
         documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
@@ -357,11 +361,12 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion):
                       "nb_documents":  len(docs_tagges),
                       "id_suggestion": suggestion.id},
             id_utilisateur=id_utilisateur,
+            adresse_ip=adresse_ip,
         )
 
 
-def valider_suggestion(db: Session, suggestion: Suggestion) -> dict:
-    appliquer_suggestion(db, suggestion)
+def valider_suggestion(db: Session, suggestion: Suggestion, adresse_ip: str | None = None) -> dict:
+    appliquer_suggestion(db, suggestion, adresse_ip=adresse_ip)
     suggestion.statut = "validee"
     suggestion.date_traitement = datetime.now(timezone.utc)
 

@@ -70,7 +70,7 @@ def valider_suggestion(id_suggestion: int,
     if suggestion.statut != "en_attente":
         raise HTTPException(status_code=400, detail="Suggestion déjà traitée")
 
-    resultat = agent_service.valider_suggestion(db=db, suggestion=suggestion)
+    resultat = agent_service.valider_suggestion(db=db, suggestion=suggestion, adresse_ip=_client_ip(request))
 
     log_service.log_action(
         db=db,
