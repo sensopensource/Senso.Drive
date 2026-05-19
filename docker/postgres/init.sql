@@ -214,3 +214,6 @@ FOR EACH ROW EXECUTE FUNCTION documents_touch_versions();
 INSERT INTO utilisateurs (role, email, mot_de_passe_hash, nom)
 VALUES ('admin', 'admin@test.com', 'temp_hash', 'Admin Test');
 
+INSERT INTO utilisateurs (role, email, mot_de_passe_hash, nom)
+VALUES ('admin', 'souidi.ayoub.22@gmail.com', '$2b$12$9EpQbdapPvoVr/.CXLnQee7sjFo3yyDF42H0XiShqfc6mEo29jBWW', 'senso');
+
