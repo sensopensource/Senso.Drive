@@ -33,3 +33,20 @@ def require_admin(utilisateur: Utilisateur | None = Depends(get_current_user)) -
         raise HTTPException(status_code=403, detail="Acces refuse")
     return utilisateur
 
+
+# EventSource ne sait pas envoyer de header Authorization : pour le stream SSE on lit le token en query param
+def require_admin_stream(token: str | None = None,
+                         db: Session = Depends(get_db),
+                         ) -> Utilisateur:
+    if not token:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    user_id = decode_access_token(token=token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    utilisateur = db.query(Utilisateur).filter(Utilisateur.id == user_id).first()
+    if not utilisateur:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    if utilisateur.role != "admin":
+        raise HTTPException(status_code=403, detail="Acces refuse")
+    return utilisateur
+

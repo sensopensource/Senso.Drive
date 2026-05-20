@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.logs import Log
 from app.schemas.log import LogRead, LogListResponse
+from app.services.log_broadcaster import broadcaster
 
 
 def log_action(db: Session,
@@ -22,6 +23,10 @@ def log_action(db: Session,
     )
     db.add(log)
     db.commit()
+
+    if broadcaster.abonnes:
+        charge = LogRead.model_validate(log).model_dump(mode="json")
+        broadcaster.diffuser(charge)
 
 
 def list_logs(db: Session,

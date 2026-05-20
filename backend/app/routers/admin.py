@@ -1,13 +1,16 @@
+import json
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, require_admin_stream
 from app.models.utilisateurs import Utilisateur
 from app.schemas.log import LogListResponse
 from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail
 from app.schemas.admin import TokensStats, StockageStats, SanteStats
 from app.services import log_service, utilisateur_service, consommation_service, document_service
+from app.services.log_broadcaster import broadcaster
 
 
 def _client_ip(request: Request) -> str | None:
@@ -39,6 +42,20 @@ def list_logs(
         date_debut=date_debut,
         date_fin=date_fin,
     )
+
+
+@router.get("/logs/stream")
+async def stream_logs(_admin: Utilisateur = Depends(require_admin_stream)):
+    async def event_generator():
+        q = broadcaster.s_abonner()
+        try:
+            while True:
+                log = await q.get()
+                yield f"data: {json.dumps(log)}\n\n"
+        finally:
+            broadcaster.se_desabonner(q)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.get("/users", response_model=list[UtilisateurAdminRow])
