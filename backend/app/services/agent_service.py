@@ -174,7 +174,7 @@ def call_agent(db: Session, id_utilisateur: int, documents: list[dict], categori
         consommation_service.enregistrer(
             db=db,
             id_utilisateur=id_utilisateur,
-            source="agent",
+            source="suggestion",
             modele=modele,
             tokens_in=response.usage.input_tokens,
             tokens_out=response.usage.output_tokens,
@@ -192,7 +192,7 @@ def call_agent(db: Session, id_utilisateur: int, documents: list[dict], categori
         consommation_service.enregistrer(
             db=db,
             id_utilisateur=id_utilisateur,
-            source="agent",
+            source="suggestion",
             modele=modele,
             tokens_in=0,
             tokens_out=0,
