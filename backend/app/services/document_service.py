@@ -3,13 +3,14 @@ import uuid
 from pathlib import Path
 
 from sqlalchemy.orm import Session,selectinload
-from sqlalchemy import func,or_
-from datetime import datetime, timezone
+from sqlalchemy import func,or_,cast,Date
+from datetime import datetime, timezone, timedelta
 
 from app.models.documents import Document
 from app.models.versions import Version
 from app.models.categories import Categorie
 from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse,VersionRead
+from app.schemas.admin import StockageStats, StockageParType, StockageConsommateur, StockagePoint
 from app.services.extraction import extract_text
 from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
@@ -663,4 +664,56 @@ def resume_background(document_id: int, id_utilisateur: int):
         )
     finally:
         db.close()
+
+
+def get_stockage_stats(db: Session, jours: int | None = None) -> StockageStats:
+    total_octets = db.query(func.sum(Version.taille_octets)).scalar()
+    if total_octets is None:
+        total_octets = 0
+    else:
+        total_octets = int(total_octets)
+
+    lignes_type = (db.query(Version.type_fichier, func.sum(Version.taille_octets))
+                   .group_by(Version.type_fichier)
+                   .all())
+
+    par_type = []
+    for type_fichier, taille in lignes_type:
+        par_type.append(StockageParType(type_fichier=type_fichier, taille_octets=int(taille)))
+
+    lignes_users = (db.query(Utilisateur.id, Utilisateur.nom, func.sum(Version.taille_octets))
+                    .join(Document, Document.id_utilisateur == Utilisateur.id)
+                    .join(Version, Version.id_document == Document.id)
+                    .group_by(Utilisateur.id, Utilisateur.nom)
+                    .order_by(func.sum(Version.taille_octets).desc())
+                    .all())
+
+    top_consommateurs = []
+    for id_user, nom, taille in lignes_users:
+        top_consommateurs.append(StockageConsommateur(id_utilisateur=id_user,
+                                                       nom=nom,
+                                                       taille_octets=int(taille)))
+
+    requete_jours = db.query(cast(Version.date_upload, Date), func.sum(Version.taille_octets))
+    if jours is not None:
+        seuil = datetime.now(timezone.utc) - timedelta(days=jours)
+        requete_jours = requete_jours.filter(Version.date_upload >= seuil)
+    lignes_jours = (requete_jours
+                    .group_by(cast(Version.date_upload, Date))
+                    .order_by(cast(Version.date_upload, Date))
+                    .all())
+
+    serie = []
+    cumul = 0
+    for jour, taille in lignes_jours:
+        taille = int(taille)
+        cumul += taille
+        serie.append(StockagePoint(jour=jour, taille_octets=taille, taille_cumulee=cumul))
+
+    return StockageStats(
+        total_octets=total_octets,
+        par_type=par_type,
+        top_consommateurs=top_consommateurs,
+        serie_temporelle=serie,
+    )
 

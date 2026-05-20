@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel,EmailStr,ConfigDict
 
 
@@ -19,6 +20,22 @@ class UtilisateurRead(BaseModel):
     role: str
     id: int
     
+
+class UtilisateurAdminRow(BaseModel):
+    id: int
+    nom: str
+    email: EmailStr
+    role: str
+    date_inscription: datetime
+    nb_documents: int
+    tokens_30j: int
+    nb_suggestions: int
+    dernier_login: datetime | None = None
+
+
+class UtilisateurAdminDetail(UtilisateurAdminRow):
+    stockage_octets: int
+
 
 class Token(BaseModel):
     access_token: str
