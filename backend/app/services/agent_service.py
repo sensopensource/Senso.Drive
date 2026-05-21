@@ -1,5 +1,6 @@
 import time
 import anthropic
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import ANTHROPIC_API_KEY
@@ -277,6 +278,13 @@ def analyser_bibliotheque(db: Session, id_utilisateur: int) -> list[dict]:
 
     suggestions_a_enregistrer = []
     for s in suggestions_filtrees:
+        # Un regroupement sans categorie cible exploitable (ni id ni nom) est ingerable
+        # a la validation — on ne le stocke pas.
+        if s["type"] == "regroupement":
+            cible_id = s.get("categorie_cible_id")
+            cible_nom = (s.get("categorie_cible_nom") or "").strip()
+            if cible_id is None and not cible_nom:
+                continue
         payload = dict(s)
         del payload["type"]
         suggestion = Suggestion(id_utilisateur=id_utilisateur,
@@ -298,8 +306,14 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion, adresse_ip: str | 
     if type_suggestion == "regroupement":
         cat_id = payload.get("categorie_cible_id")
         if cat_id is None:
+            nom_cible = (payload.get("categorie_cible_nom") or "").strip()
+            if not nom_cible:
+                raise HTTPException(
+                    status_code=400,
+                    detail="La suggestion ne précise pas de catégorie cible (ni id ni nom)",
+                )
             categorie = categorie_service.create_categorie(db,
-                                                           nom=payload.get("categorie_cible_nom"),
+                                                           nom=nom_cible,
                                                            id_utilisateur=id_utilisateur)
             cat_id = categorie.id
             log_service.log_action(
