@@ -6,6 +6,8 @@ import RegisterPage from "./pages/RegisterPage"
 import CategoriesPage from "./pages/CategoriesPage"
 import DocumentsPage from "./pages/DocumentsPage"
 import CorbeillePage from "./pages/CorbeillePage"
+import AdminDashboardPage from "./pages/AdminDashboardPage"
+import AdminRoute from "./components/AdminRoute"
 import ToastContainer from "./components/ToastContainer"
 import { AuthProvider } from "./contexts/AuthContext"
 import { ToastProvider } from "./contexts/ToastContext"
@@ -41,6 +43,11 @@ function App() {
                 <ProtectedRoute>
                   <CorbeillePage />
                 </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboardPage />
+                </AdminRoute>
               } />
             </Routes>
           </BrowserRouter>

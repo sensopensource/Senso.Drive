@@ -79,6 +79,26 @@ function HomePageInner() {
           </Link>
 
         </div>
+
+        {/* Administration (visible uniquement pour les admins) */}
+        {user?.role === 'admin' && (
+          <div className="mt-10">
+            <div className="section-label mb-3 text-type-md">Administration</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Link
+                to="/admin"
+                className="block hair bg-panel p-5 hover:bg-elev transition-colors group"
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <span className="material-symbols-outlined text-[20px] text-type-md">dashboard</span>
+                  <span className="text-[11px] font-mono text-mute group-hover:text-bright transition-colors">→</span>
+                </div>
+                <div className="text-[14px] text-bright mb-1">Vue d'ensemble</div>
+                <p className="text-[12px] text-soft">Tableau de bord admin : utilisateurs, tokens, logs, santé.</p>
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
