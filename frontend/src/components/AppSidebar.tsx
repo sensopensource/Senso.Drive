@@ -10,6 +10,7 @@ import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "..
 import type { CategorieNode } from "../types"
 import NewCategorieModal from "./NewCategorieModal"
 import { useAgent } from "../contexts/AgentContext"
+import { useAuth } from "../contexts/AuthContext"
 
 const CAT_COLORS = ["var(--type-pdf)", "var(--type-docx)", "var(--type-txt)", "var(--type-md)"]
 
@@ -243,6 +244,7 @@ function AppSidebar() {
   const { total: totalDocs } = useDocuments(1, 1, null)
   const { total: totalCorbeille } = useCorbeille(1, 1)
   const { pendingCount, startAnalysis, openSuggestions, analysisRunning } = useAgent()
+  const { user } = useAuth()
   const [newCatTarget, setNewCatTarget] = useState<NewCatTarget>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
@@ -463,6 +465,47 @@ function AppSidebar() {
             />
           ))}
         </div>
+
+        {/* Section Admin (reservee aux admins) */}
+        {user?.role === 'admin' && (
+          <div className="px-3 py-1.5 mt-2">
+            <div className="section-label px-2 mb-1 flex items-center justify-between">
+              <span className="text-type-md">Admin</span>
+              <span className="material-symbols-outlined text-[11px] text-type-md">shield</span>
+            </div>
+
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `relative flex items-center gap-2 px-2 py-1.5 text-[12.5px] transition-colors ${
+                  isActive
+                    ? 'text-bright bg-elev before:content-[""] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-3.5 before:bg-type-md'
+                    : 'text-soft hover:text-bright hover:bg-elev'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={`material-symbols-outlined text-[15px] ${isActive ? 'text-type-md' : 'text-mute'}`}>dashboard</span>
+                  <span className="flex-1">Vue d'ensemble</span>
+                </>
+              )}
+            </NavLink>
+
+            {/* Sous-pages a venir (etape ulterieure) */}
+            {['Utilisateurs', 'Logs', 'Tokens & coûts', 'Stockage', 'Santé LLM'].map(label => (
+              <button
+                key={label}
+                type="button"
+                disabled
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-[12.5px] text-soft opacity-40 cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[15px] text-mute">lock</span>
+                <span className="flex-1 text-left">{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Footer storage (placeholder) */}

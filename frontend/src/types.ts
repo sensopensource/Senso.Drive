@@ -75,3 +75,78 @@ export type DocumentListResponse = {
     page: number
     size: number
 }
+
+// ─── Admin dashboard (miroir de schemas/admin.py + schemas/log.py) ───
+
+export type OverviewDocType = {
+    type_fichier: string
+    nb_documents: number
+}
+
+export type OverviewKpis = {
+    utilisateurs_total: number
+    utilisateurs_delta: number
+    documents_total: number
+    documents_delta: number
+    tokens_periode: number
+    tokens_delta_pct: number | null
+    suggestions_total: number
+    suggestions_validees: number
+    suggestions_refusees: number
+    suggestions_en_attente: number
+    evenements_total: number
+    evenements_erreurs_jour: number
+    docs_par_type: OverviewDocType[]
+}
+
+export type TokensParSource = {
+    source: string  // "resume" | "suggestion"
+    tokens_in: number
+    tokens_out: number
+    cout_estime: number
+}
+
+export type TokensPoint = {
+    jour: string  // date ISO
+    tokens_in: number
+    tokens_out: number
+}
+
+export type TokensStats = {
+    total_tokens_in: number
+    total_tokens_out: number
+    cout_estime_total: number
+    par_source: TokensParSource[]
+    par_modele: { modele: string; tokens_in: number; tokens_out: number; cout_estime: number }[]
+    serie_temporelle: TokensPoint[]
+}
+
+export type UtilisateurAdminRow = {
+    id: number
+    nom: string
+    email: string
+    role: string
+    date_inscription: string
+    nb_documents: number
+    tokens_30j: number
+    nb_suggestions: number
+    dernier_login: string | null
+}
+
+export type LogRead = {
+    id: number
+    id_utilisateur: number | null
+    niveau: string  // "info" | "ok" | "warn" | "err"
+    action: string
+    message: string
+    contexte: Record<string, unknown> | null
+    adresse_ip: string | null
+    cree_le: string
+}
+
+export type LogListResponse = {
+    items: LogRead[]
+    total: number
+    page: number
+    size: number
+}

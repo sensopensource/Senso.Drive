@@ -5,6 +5,7 @@ import type { User } from "../types"
 // 1. Le type de ce qu'on va partager
 type AuthContextType = {
   user: User | null
+  isLoading: boolean
   logout: () => Promise<void>
 }
 
@@ -18,18 +19,23 @@ type ProviderProps = {
 
 export function AuthProvider({ children }: ProviderProps) {
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Fetch user au chargement si token présent
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('token')
-      if (!token) return   // pas connecté, on ne fetch pas
+      if (!token) {   // pas connecté, on ne fetch pas
+        setIsLoading(false)
+        return
+      }
 
       const response = await apiFetch("/auth/me")
       if (response.ok) {
         const data: User = await response.json()
         setUser(data)
       }
+      setIsLoading(false)
     }
     fetchUser()
   }, [])
@@ -44,7 +50,7 @@ export function AuthProvider({ children }: ProviderProps) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout }}>
       {children}
     </AuthContext.Provider>
   )
