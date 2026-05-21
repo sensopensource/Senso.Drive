@@ -120,14 +120,15 @@ export function AgentProvider({ children }: ProviderProps) {
   }
 
   const openSuggestions = () => {
-    if (tourSuggestions.length === 0) {
-      const en_attente = suggestions.filter(s => s.statut === 'en_attente')
-      if (en_attente.length === 0) {
-        setEmptyToastOpen(true)
-        return
-      }
-      demarrer_tour(en_attente)
+    // On reconstruit toujours le tour depuis les suggestions reellement en attente :
+    // les "plus tard" (skipped) d'une session precedente sont encore en_attente en base
+    // et doivent reapparaitre. La validation/le refus ont rafraichi le cache au prealable.
+    const en_attente = suggestions.filter(s => s.statut === 'en_attente')
+    if (en_attente.length === 0) {
+      setEmptyToastOpen(true)
+      return
     }
+    demarrer_tour(en_attente)
     setSuggestionsModalOpen(true)
   }
 
