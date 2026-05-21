@@ -8,8 +8,8 @@ from app.core.dependencies import require_admin, require_admin_stream
 from app.models.utilisateurs import Utilisateur
 from app.schemas.log import LogListResponse
 from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail
-from app.schemas.admin import TokensStats, StockageStats, SanteStats
-from app.services import log_service, utilisateur_service, consommation_service, document_service
+from app.schemas.admin import TokensStats, StockageStats, SanteStats, OverviewKpis
+from app.services import log_service, utilisateur_service, consommation_service, document_service, overview_service
 from app.services.log_broadcaster import broadcaster
 
 
@@ -135,3 +135,12 @@ def get_sante(
     db: Session = Depends(get_db),
 ) -> SanteStats:
     return consommation_service.get_sante_stats(db, jours=jours)
+
+
+@router.get("/overview", response_model=OverviewKpis)
+def get_overview(
+    jours: int = 7,
+    _admin: Utilisateur = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> OverviewKpis:
+    return overview_service.get_overview(db, jours=jours)

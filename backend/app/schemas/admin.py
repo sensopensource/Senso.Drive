@@ -80,3 +80,24 @@ class SanteStats(BaseModel):
     taux_erreur: float
     par_source: list[SanteParSource]
     derniers_incidents: list[SanteIncident]
+
+
+class OverviewDocType(BaseModel):
+    type_fichier: str
+    nb_documents: int
+
+
+class OverviewKpis(BaseModel):
+    utilisateurs_total: int
+    utilisateurs_delta: int
+    documents_total: int
+    documents_delta: int
+    tokens_periode: int
+    tokens_delta_pct: float | None
+    suggestions_total: int
+    suggestions_validees: int
+    suggestions_refusees: int
+    suggestions_en_attente: int
+    evenements_total: int
+    evenements_erreurs_jour: int
+    docs_par_type: list[OverviewDocType]
