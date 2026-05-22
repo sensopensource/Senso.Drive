@@ -34,7 +34,7 @@ Coeur de l'application. Upload, organisation (categories hierarchiques, tags), v
 Chaque action utilisateur est tracee : upload, telechargement, suppression, recherche, connexion, modification. Les logs servent a l'historique personnel et a la surveillance admin.
 
 **Pilier 3 — Detection d'anomalies**
-Les logs sont analyses pour detecter des patterns suspects (brute force, telechargement massif, acces non autorise). 10 regles de detection definies par seuil. Voir [anomalies.md](anomalies.md) pour le detail complet.
+Les logs sont analyses pour detecter des patterns suspects (brute force, telechargement massif, acces non autorise). 10 regles de detection definies par seuil. Voir [anomalies.md](archive/anomalies.md) pour le detail complet.
 
 ### 2.2 Pipeline de donnees
 
@@ -230,4 +230,4 @@ Volumes Docker :
 ## 9. References
 **Dispo dans le repo**
 - [Diagrammes UML et MCD](uml.md)
-- [Liste des anomalies](anomalies.md)
+- [Liste des anomalies](archive/anomalies.md)

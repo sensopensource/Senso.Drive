@@ -13,8 +13,8 @@
 
 | Composant | Déclenché depuis | PRD |
 |-----------|------------------|-----|
-| Modal Upload | Bouton dans "Mes Documents" (et Dashboard) | [components/modal-upload.md](components/modal-upload.md) |
-| Panel Détail Document (slide-in) | Clic sur un document dans liste / résultats recherche | [components/panel-detail.md](components/panel-detail.md) |
+| Modal Upload | Bouton dans "Mes Documents" (et Dashboard) | PRD jamais écrit |
+| Panel Détail Document (slide-in) | Clic sur un document dans liste / résultats recherche | PRD jamais écrit |
 
 ## Décisions de design
 

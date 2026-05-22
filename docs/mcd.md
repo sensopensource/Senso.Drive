@@ -1,6 +1,6 @@
 ## Diagramme entite-relation (MCD)
 
-w```mermaid
+```mermaid
 erDiagram
     UTILISATEUR {
         int id PK

@@ -1,38 +1,15 @@
-# Design & PRDs — DocManager
+# Design — Senso.Drive
 
-Ce dossier regroupe tout le travail de conception UI/UX du projet : spécifications d'écrans (PRDs), mockups HTML, et composants transverses.
+Conception amont du projet : liste des écrans MVP et décisions de design historiques.
 
-## Structure
+## Contenu de ce dossier
 
-```
-design/
-├── README.md              ← ce fichier (index)
-├── ecrans.md              ← liste des écrans MVP + ordre de priorité
-├── prds/                  ← un PRD par écran
-│   ├── 01-mes-documents.md
-│   ├── 02-recherche.md
-│   ├── 03-dashboard.md
-│   └── 04-auth.md
-├── components/            ← PRDs des composants transverses
-│   ├── modal-upload.md
-│   └── panel-detail.md
-└── mockups/               ← maquettes HTML statiques (variations de design)
-    └── slitch-v1.html     ← premier essai (style brutaliste terminal)
-```
+- `ecrans.md` — liste des écrans MVP + composants transverses + décisions de design
 
-## Ordre de travail
+## Où vit le reste de la doc
 
-1. Valider la liste d'écrans (`ecrans.md`)
-2. Écrire les PRDs un par un dans `prds/`
-3. Générer 2-3 variations de mockups dans `mockups/` une fois les PRDs prêts
-4. Choisir la direction de design puis implémenter côté frontend
+- **Maquettes (source de vérité visuelle)** : `docs/maquettes/` — un HTML interactif par feature
+- **PRD (specs détaillées par écran)** : `docs/prds/`
+- **Analyses techniques (coût LLM / RAM)** : `docs/analyses/`
 
-## État actuel
-
-- [x] Liste des écrans définie
-- [ ] PRD Mes Documents (en cours)
-- [ ] PRD Recherche
-- [ ] PRD Dashboard
-- [ ] PRD Auth
-- [ ] PRD composants (modal upload, panel détail)
-- [ ] Mockups variations
+> Nettoyage du 2026-05-21 : les anciens mockups d'exploration (`mockups/v1`→`v10`, `slitch-v1`) et les PRD de composants jamais écrits (`modal-upload`, `panel-detail`) ont été retirés. La source de vérité design est désormais `docs/maquettes/`.
