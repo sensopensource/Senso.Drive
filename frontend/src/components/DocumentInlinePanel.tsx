@@ -232,13 +232,6 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
     })
   }
 
-  const formatSize = (bytes: number | null | undefined) => {
-    if (bytes == null) return '—'
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  }
-
   const typeIcon = document?.type_fichier ? TYPE_ICONS[document.type_fichier] ?? "insert_drive_file" : "insert_drive_file"
   const typeBar = document?.type_fichier ? TYPE_BARS[document.type_fichier] ?? "bg-mute" : "bg-mute"
   const categorieNom = document?.id_categorie
