@@ -1,3 +1,4 @@
+name: SensoDrive_prod
 services:
   db:
     image: postgres:16
