@@ -14,7 +14,20 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       retries: 5
-
+  traefik:
+    image: traefik:v3.6
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.dashboard=true
+      - --api.insecure=true
+    ports:
+      - "80:80"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
   backend:
     build:
       context: ./backend
@@ -27,18 +40,26 @@ services:
       - .env.prod
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    ports:
-      - "127.0.0.1:8000:8000"
+
     volumes:
       - documents_data:/app/storage/documents
-
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api`)
+      - traefik.http.routers.backend.entrypoints=web
+      - traefik.http.routers.backend.middlewares=api-strip
+      - traefik.http.middlewares.api-strip.stripprefix.prefixes=/api
+      - traefik.http.services.backend.loadbalancer.server.port=8000
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
     restart: unless-stopped
-    ports:
-       - "127.0.0.1:8080:80"
+    labels:
+       - traefik.enable=true
+       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+       - traefik.http.routers.frontend.entrypoints=web
+       - traefik.http.services.frontend.loadbalancer.server.port=80
 volumes:
   postgres_data:
   documents_data:
