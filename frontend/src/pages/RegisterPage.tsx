@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ChangeEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import type { LoginResponse } from "../types"
+import { API_URL } from "../api"
 
 function RegisterPage() {
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ function RegisterPage() {
 
     const payload = { email, password: mdp, nom }
 
-    const response = await fetch("http://localhost:8000/auth/register", {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-type': 'application/json' },
       body: JSON.stringify(payload),

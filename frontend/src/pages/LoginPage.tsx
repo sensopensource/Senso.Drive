@@ -2,7 +2,7 @@ import { useState, useEffect, type FormEvent, type ChangeEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useToast } from "../contexts/ToastContext"
 import type { LoginResponse } from "../types"
-
+import { API_URL } from "../api"
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -25,7 +25,7 @@ function LoginPage() {
     formData.append('username', email)
     formData.append('password', mdp)
 
-    const response = await fetch("http://localhost:8000/auth/login", {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-type': 'application/x-www-form-urlencoded' },
       body: formData,

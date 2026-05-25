@@ -10,6 +10,7 @@ import { useAnalyserDocument } from "../hooks/useAnalyserDocument"
 import { useAddVersion } from "../hooks/useAddVersion"
 import { useVersions } from "../hooks/useVersions"
 import  ReactMarkdown from 'react-markdown'
+import { apiFetch } from "../api"
 
 type Props = {
   documentId: number
@@ -138,13 +139,11 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
   }
 
   const handleDownload = async () => {
-    const token = localStorage.getItem('token')
-    const url = displayedVersion && isViewingArchived
-      ? `http://localhost:8000/documents/${documentId}/versions/${displayedVersion.numero}/download`
-      : `http://localhost:8000/documents/${documentId}/download`
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    })
+    const path = displayedVersion && isViewingArchived
+    ? `/documents/${documentId}/versions/${displayedVersion.numero}/download`
+    : `/documents/${documentId}/download`
+
+    const response = await apiFetch(path)
     if (!response.ok) return
     const disposition = response.headers.get('content-disposition') || ''
     const match = disposition.match(/filename="?([^";]+)"?/)
