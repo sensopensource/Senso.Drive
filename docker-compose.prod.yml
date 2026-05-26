@@ -20,13 +20,21 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=souidi.ayoub.22@gmail.com
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --api.dashboard=true
       - --api.insecure=true
     ports:
       - "80:80"
+      - "443:443"
       - "127.0.0.1:8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
     restart: unless-stopped
   backend:
     build:
@@ -45,8 +53,9 @@ services:
       - documents_data:/app/storage/documents
     labels:
       - traefik.enable=true
-      - traefik.http.routers.backend.rule=PathPrefix(`/api`)
-      - traefik.http.routers.backend.entrypoints=web
+      - traefik.http.routers.backend.rule=Host(`sensodrive.cloud`) && PathPrefix(`/api`)
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls.certresolver=le
       - traefik.http.routers.backend.middlewares=api-strip
       - traefik.http.middlewares.api-strip.stripprefix.prefixes=/api
       - traefik.http.services.backend.loadbalancer.server.port=8000
@@ -56,10 +65,12 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     labels:
-       - traefik.enable=true
-       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
-       - traefik.http.routers.frontend.entrypoints=web
-       - traefik.http.services.frontend.loadbalancer.server.port=80
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`sensodrive.cloud`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls.certresolver=le
+      - traefik.http.services.frontend.loadbalancer.server.port=80
 volumes:
   postgres_data:
   documents_data:
+  letsencrypt:
