@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react"
-import { apiFetch, API_URL } from "../api"
+import { useState, useEffect } from "react"
+import { apiFetch } from "../api"
 import type { LogRead, LogListResponse } from "../types"
 
 const MAX_LOGS = 100  // on plafonne le buffer pour ne pas faire gonfler la memoire indefiniment
@@ -9,7 +9,6 @@ const MAX_LOGS = 100  // on plafonne le buffer pour ne pas faire gonfler la memo
 export function useLogStream(paused: boolean) {
   const [logs, setLogs] = useState<LogRead[]>([])
   const [connected, setConnected] = useState(false)
-  const sourceRef = useRef<EventSource | null>(null)
 
   // 1. Snapshot initial (les 50 derniers logs) au montage
   useEffect(() => {
@@ -24,31 +23,45 @@ export function useLogStream(paused: boolean) {
     return () => { annule = true }
   }, [])
 
-  // 2. Flux live — EventSource passe le token en query param (pas de header possible)
+  // 2. Flux live — fetch + reader du response.body
   useEffect(() => {
-    if (paused) return
+    if(paused) return
+   
+    const controller = new AbortController()
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+   const ecouter = async () => { 
+     const response = await apiFetch('/admin/logs/stream', {signal: controller.signal})
+     if (!response.ok || !response.body) return
+     setConnected(true)
 
-    const source = new EventSource(`${API_URL}/admin/logs/stream?token=${token}`)
-    sourceRef.current = source
+   const reader = response.body.getReader()
+   const decoder = new TextDecoder()
+   let buffer = ''
 
-    source.onopen = () => setConnected(true)
+  while(true) {
+    const {value,done} = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true})
 
-    source.onmessage = (event) => {
-      const log: LogRead = JSON.parse(event.data)
+    const events = buffer.split('\n\n')
+    buffer = events.pop() ?? ''
+
+    for (const evt of events) {
+      const ligne = evt.split('\n').find(l => l.startsWith('data:'))
+      if (!ligne) continue 
+      const log: LogRead = JSON.parse(ligne.slice(5).trim())
       setLogs(prev => [log, ...prev].slice(0, MAX_LOGS))
     }
+  }
+}
 
-    source.onerror = () => setConnected(false)
+  ecouter().catch(() => {}).finally(() => setConnected(false))
 
-    return () => {
-      source.close()
-      sourceRef.current = null
-      setConnected(false)
-    }
-  }, [paused])
+  return () => { 
+    controller.abort()
+    setConnected(false)
+  }
+},[paused])
 
-  return { logs, connected }
+return { logs,connected }
 }
