@@ -48,7 +48,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 7G
+          memory: 9G
           cpus: '4'
   backend:
     build:
