@@ -36,6 +36,20 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
     restart: unless-stopped
+  ollama:
+    image: ollama/ollama:0.24.0
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=24h
+    deploy:
+      resources:
+        limits:
+          memory: 7G
+          cpus: '4'
   backend:
     build:
       context: ./backend
@@ -44,6 +58,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started
     env_file:
       - .env.prod
     environment:
@@ -74,3 +90,4 @@ volumes:
   postgres_data:
   documents_data:
   letsencrypt:
+  ollama_data:
