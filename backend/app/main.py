@@ -1,9 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.database import SessionLocal
 from sqlalchemy import text
 from app.routers import documents, auth, categories, tags, historiques, agent, admin, preferences
 
 app = FastAPI()
+
+@app.middleware("http")
+async def no_store(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 app.include_router(documents.router)
 app.include_router(auth.router)
