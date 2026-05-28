@@ -35,6 +35,16 @@ class UtilisateurAdminRow(BaseModel):
 
 class UtilisateurAdminDetail(UtilisateurAdminRow):
     stockage_octets: int
+    quota_octets: int
+    cout_estime_30j: float
+    suggestions_en_attente: int
+    suggestions_validees: int
+    suggestions_refusees: int
+    docs_par_type: dict[str, int]
+    nb_documents_corbeille: int
+    nb_recherches: int
+    nb_categories: int
+    nb_tags: int
 
 
 class Token(BaseModel):

@@ -13,6 +13,7 @@ from app.models.historiques_recherches import HistoriqueRecherche
 from app.models.preferences_utilisateur_dashboard import PreferenceUtilisateurDashboard
 from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail,StockageUtilisateur
 from app.core.config import STOCKAGE_QUOTA_OCTETS
+from app.core.tarifs_llm import cout_estime
 
 
 def list_users_admin(db: Session) -> list[UtilisateurAdminRow]:
@@ -75,9 +76,14 @@ def get_user_admin(db: Session, id_utilisateur: int) -> UtilisateurAdminDetail |
     if tokens_30j is None:
         tokens_30j = 0
 
-    nb_suggestions = (db.query(func.count(Suggestion.id))
-                      .filter(Suggestion.id_utilisateur == id_utilisateur)
-                      .scalar())
+    suggestions_par_statut = dict(db.query(Suggestion.statut, func.count(Suggestion.id))
+                                  .filter(Suggestion.id_utilisateur == id_utilisateur)
+                                  .group_by(Suggestion.statut)
+                                  .all())
+    suggestions_en_attente = suggestions_par_statut.get("en_attente", 0)
+    suggestions_validees   = suggestions_par_statut.get("validee", 0)
+    suggestions_refusees   = suggestions_par_statut.get("refusee", 0)
+    nb_suggestions         = suggestions_en_attente + suggestions_validees + suggestions_refusees
 
     stockage_octets = (db.query(func.sum(Version.taille_octets))
                        .join(Document, Version.id_document == Document.id)
@@ -85,6 +91,42 @@ def get_user_admin(db: Session, id_utilisateur: int) -> UtilisateurAdminDetail |
                        .scalar())
     if stockage_octets is None:
         stockage_octets = 0
+
+    cout_estime_30j = 0.0
+    lignes_cout = (db.query(ConsommationTokens.modele,
+                            func.sum(ConsommationTokens.tokens_in),
+                            func.sum(ConsommationTokens.tokens_out))
+                   .filter(ConsommationTokens.id_utilisateur == id_utilisateur,
+                           ConsommationTokens.cree_le >= seuil_30j)
+                   .group_by(ConsommationTokens.modele)
+                   .all())
+    for modele, sum_in, sum_out in lignes_cout:
+        cout_estime_30j += cout_estime(modele, sum_in, sum_out)
+
+    lignes_type = (db.query(Version.type_fichier, func.count(func.distinct(Document.id)))
+                   .join(Document, Document.id == Version.id_document)
+                   .filter(Document.id_utilisateur == id_utilisateur,
+                           Document.deleted_at.is_(None))
+                   .group_by(Version.type_fichier)
+                   .all())
+    docs_par_type = {type_fichier: nb for type_fichier, nb in lignes_type}
+
+    nb_documents_corbeille = (db.query(func.count(Document.id))
+                              .filter(Document.id_utilisateur == id_utilisateur,
+                                      Document.deleted_at.isnot(None))
+                              .scalar())
+
+    nb_recherches = (db.query(func.count(HistoriqueRecherche.id))
+                     .filter(HistoriqueRecherche.id_utilisateur == id_utilisateur)
+                     .scalar())
+
+    nb_categories = (db.query(func.count(Categorie.id))
+                     .filter(Categorie.id_utilisateur == id_utilisateur)
+                     .scalar())
+
+    nb_tags = (db.query(func.count(Tag.id))
+               .filter(Tag.id_utilisateur == id_utilisateur)
+               .scalar())
 
     dernier_login = (db.query(func.max(Log.cree_le))
                      .filter(Log.id_utilisateur == id_utilisateur,
@@ -102,6 +144,16 @@ def get_user_admin(db: Session, id_utilisateur: int) -> UtilisateurAdminDetail |
         nb_suggestions=nb_suggestions,
         dernier_login=dernier_login,
         stockage_octets=stockage_octets,
+        quota_octets=STOCKAGE_QUOTA_OCTETS,
+        cout_estime_30j=cout_estime_30j,
+        suggestions_en_attente=suggestions_en_attente,
+        suggestions_validees=suggestions_validees,
+        suggestions_refusees=suggestions_refusees,
+        docs_par_type=docs_par_type,
+        nb_documents_corbeille=nb_documents_corbeille,
+        nb_recherches=nb_recherches,
+        nb_categories=nb_categories,
+        nb_tags=nb_tags,
     )
 
 def get_user_stockage(db: Session,id_utilisateur: int) -> StockageUtilisateur:
