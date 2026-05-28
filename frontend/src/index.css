@@ -502,6 +502,15 @@ body {
   font-size: 10.5px;
   color: var(--mute);
 }
+.modal-sugg .doc-row .keep {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bright);
+  border: 0.5px solid var(--line2);
+  padding: 1px 5px;
+}
 
 /* Footer : 2 actions principales pleine hauteur */
 .modal-sugg .foot {

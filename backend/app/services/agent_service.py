@@ -27,6 +27,8 @@ def collect_context(db: Session, id_utilisateur: int) -> list[dict]:
       contexte = []
       for doc in documents:
 
+          if not doc.versions:
+              continue
           derniere_version = max(doc.versions, key=lambda v: v.numero)
 
           if derniere_version.resume_llm:
@@ -105,6 +107,10 @@ Tu peux proposer 3 types de suggestions :
    seront mis en corbeille (réversible), pas supprimés définitivement.
    - C'est l'action correcte dès que tu détectes de la redondance, même
      partielle, entre les documents concernés.
+   - Mets TOUS les exemplaires en double dans "document_ids" (le groupe
+     entier). Le système conserve AUTOMATIQUEMENT le plus récemment
+     uploadé et met les autres à la corbeille — ne choisis pas toi-même
+     lequel garder, et ne retire pas le "gardé" de la liste.
 
 3. TAG : suggérer d'ajouter un tag commun à un groupe de documents
    qui partagent une caractéristique transversale (ex : "urgent",
@@ -131,6 +137,9 @@ Règles strictes :
   qui sera montrée à l'utilisateur. L'explication doit être COHÉRENTE
   avec le type choisi : si tu écris "doublons" ou "quasi-doublons" dans
   l'explication, le type DOIT être "suppression".
+- Dans l'explication, désigne TOUJOURS les documents par leur titre
+  (entre guillemets), JAMAIS par leur id ni par un numéro (pas de
+  "document #1", "document 2", etc.). L'utilisateur ne voit pas les ids.
 - Ne propose JAMAIS un REGROUPEMENT si tous les documents concernés
   sont DÉJÀ dans la même catégorie (regarde le champ "categorie_id" de
   chaque document). Dans ce cas, il n'y a rien à regrouper.
@@ -231,6 +240,22 @@ def filtrer_suggestions_refusees(db: Session,id_utilisateur: int, nouvelles_sugg
             suggestions_a_retenir.append(n_s)
     return suggestions_a_retenir
 
+def _doc_conserve_id(db: Session, doc_ids: list[int]) -> int | None:
+    if not doc_ids:
+        return None
+    candidats = []
+    for doc in doc_ids:
+        version = document_service.get_latest_version(db, doc)
+        if version:
+            date = version.date_upload
+        else:
+            date = datetime.min.replace(tzinfo=timezone.utc)
+        candidats.append((date, doc))
+
+    gagnant = max(candidats)
+    return gagnant[1]
+
+
 
 def _enrichir_payload(suggestion: Suggestion, db: Session) -> dict:
     doc_ids = suggestion.payload.get("document_ids", [])
@@ -259,7 +284,8 @@ def _enrichir_payload(suggestion: Suggestion, db: Session) -> dict:
 
     payload_enrichi = dict(suggestion.payload)
     payload_enrichi["documents"] = documents_enrichis
-
+    if suggestion.type == "suppression":
+        payload_enrichi["document_conserve_id"] = _doc_conserve_id(db, doc_ids)
     return { "id":              suggestion.id,
              "id_utilisateur":  suggestion.id_utilisateur,
              "type":            suggestion.type,
@@ -348,29 +374,48 @@ def appliquer_suggestion(db: Session, suggestion: Suggestion, adresse_ip: str | 
         )
 
     elif type_suggestion == "suppression":
+        id_conserve = _doc_conserve_id(db, payload["document_ids"])
+
+        documents = db.query(Document).filter(Document.id.in_(payload["document_ids"]),
+                                              Document.id_utilisateur == id_utilisateur).all()
+        titres_par_id = {doc.id: doc.titre for doc in documents}
+
         ids_traites = []
         for doc_id in payload["document_ids"]:
+            if doc_id == id_conserve:
+                continue
             if document_service.mettre_corbeille(db, doc_id, id_utilisateur):
                 ids_traites.append(doc_id)
+
+        titres_traites = [titres_par_id.get(i) for i in ids_traites]
+        titre_conserve = titres_par_id.get(id_conserve)
+        doublons = ", ".join(f"'{t}'" for t in titres_traites if t)
 
         log_service.log_action(
             db=db,
             niveau="info",
             action="agent.documents.corbeille",
-            message=f"Agent a mis {len(ids_traites)} document(s) a la corbeille",
-            contexte={"id_documents":  ids_traites,
-                      "nb_documents":  len(ids_traites),
-                      "id_suggestion": suggestion.id},
+            message=f"Agent a conserve '{titre_conserve}' et mis a la corbeille les doublons : {doublons}",
+            contexte={"id_documents":   ids_traites,
+                      "titres":         titres_traites,
+                      "id_conserve":    id_conserve,
+                      "titre_conserve": titre_conserve,
+                      "id_suggestion":  suggestion.id},
             id_utilisateur=id_utilisateur,
             adresse_ip=adresse_ip,
         )
 
     elif type_suggestion == "tag":
-        nom_tag = payload.get("tag_name").strip()
+        nom_tag = (payload.get("tag_name") or "").strip()
+        if not nom_tag:
+            raise HTTPException(
+                status_code=400,
+                detail="La suggestion de tag ne précise pas de nom de tag",
+            )
         tag_existait = db.query(Tag).filter(Tag.name == nom_tag,
                                             Tag.id_utilisateur == id_utilisateur).first() is not None
 
-        tag_read = tag_service.create_tag(db, payload.get("tag_name"), id_utilisateur)
+        tag_read = tag_service.create_tag(db, nom_tag, id_utilisateur)
         tag = db.query(Tag).filter(Tag.id == tag_read.id).first()
 
         if not tag_existait:

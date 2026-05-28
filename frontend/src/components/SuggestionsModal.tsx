@@ -16,7 +16,14 @@ function buildTitle(s: Suggestion): string {
     return `Regrouper ${nb} document${nb > 1 ? 's' : ''}`
   }
   if (s.type === 'suppression') {
-    return `Mettre ${nb} document${nb > 1 ? 's' : ''} à la corbeille`
+    const keeperId = s.payload.document_conserve_id
+    const keeper = s.payload.documents.find(d => d.id === keeperId)
+    const copies = s.payload.documents.filter(d => d.id !== keeperId)
+    const garder = keeper ? ` (garder "${keeper.titre}")` : ''
+    if (copies.length === 1) {
+      return `Supprimer le doublon "${copies[0].titre}"${garder}`
+    }
+    return `Supprimer ${copies.length} doublons${garder}`
   }
   const tag = s.payload.tag_name ?? '—'
   return `Ajouter le tag "${tag}" à ${nb} document${nb > 1 ? 's' : ''}`
@@ -138,10 +145,14 @@ function SuggestionsModal() {
                       const couleur = doc.type_fichier
                         ? `var(--type-${doc.type_fichier})`
                         : 'var(--mute)'
+                      const conserve =
+                        currentSuggestion.type === 'suppression' &&
+                        doc.id === currentSuggestion.payload.document_conserve_id
                       return (
                         <div key={doc.id} className="doc-row">
                           <span className="type-dot" style={{ background: couleur }}></span>
                           <span className="title">{doc.titre}</span>
+                          {conserve && <span className="keep">conservé</span>}
                           {doc.categorie_nom && (
                             <span className="cat">{doc.categorie_nom}</span>
                           )}

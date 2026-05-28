@@ -16,6 +16,7 @@ export type SuggestionPayload = {
   categorie_cible_id?: number | null
   categorie_cible_nom?: string | null
   tag_name?: string | null
+  document_conserve_id?: number | null
 }
 
 export type Suggestion = {
