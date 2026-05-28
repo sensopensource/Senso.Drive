@@ -16,6 +16,14 @@ class TokensParModele(BaseModel):
     cout_estime: float
 
 
+class TokensParUtilisateur(BaseModel):
+    id_utilisateur: int
+    nom: str
+    tokens_in: int
+    tokens_out: int
+    cout_estime: float
+
+
 class TokensPoint(BaseModel):
     jour: date
     tokens_in: int
@@ -28,6 +36,7 @@ class TokensStats(BaseModel):
     cout_estime_total: float
     par_source: list[TokensParSource]
     par_modele: list[TokensParModele]
+    par_utilisateur: list[TokensParUtilisateur]
     serie_temporelle: list[TokensPoint]
 
 
