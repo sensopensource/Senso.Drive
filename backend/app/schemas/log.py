@@ -7,6 +7,7 @@ class LogRead(BaseModel):
 
     id: int
     id_utilisateur: int | None = None
+    nom_utilisateur: str | None = None
     niveau: str
     action: str
     message: str

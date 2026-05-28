@@ -27,6 +27,7 @@ def list_logs(
     niveau: str | None = None,
     action: str | None = None,
     id_utilisateur: int | None = None,
+    id_document: int | None = None,
     date_debut: datetime | None = None,
     date_fin: datetime | None = None,
     _admin: Utilisateur = Depends(require_admin),
@@ -39,6 +40,7 @@ def list_logs(
         niveau=niveau,
         action=action,
         id_utilisateur=id_utilisateur,
+        id_document=id_document,
         date_debut=date_debut,
         date_fin=date_fin,
     )

@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.logs import Log
+from app.models.utilisateurs import Utilisateur
 from app.schemas.log import LogRead, LogListResponse
 from app.services.log_broadcaster import broadcaster
 
@@ -35,10 +36,11 @@ def list_logs(db: Session,
               niveau: str | None = None,
               action: str | None = None,
               id_utilisateur: int | None = None,
+              id_document: int | None = None,
               date_debut: datetime | None = None,
               date_fin: datetime | None = None) -> LogListResponse:
 
-    base_query = db.query(Log)
+    base_query = db.query(Log).outerjoin(Utilisateur, Utilisateur.id == Log.id_utilisateur)
 
     if niveau is not None:
         base_query = base_query.filter(Log.niveau == niveau)
@@ -46,6 +48,8 @@ def list_logs(db: Session,
         base_query = base_query.filter(Log.action == action)
     if id_utilisateur is not None:
         base_query = base_query.filter(Log.id_utilisateur == id_utilisateur)
+    if id_document is not None:
+        base_query = base_query.filter(Log.contexte.contains({"id_document": id_document}))
     if date_debut is not None:
         base_query = base_query.filter(Log.cree_le >= date_debut)
     if date_fin is not None:
@@ -54,12 +58,17 @@ def list_logs(db: Session,
     total = base_query.count()
     offset = (page - 1) * size
 
-    logs = (base_query
-            .order_by(Log.cree_le.desc())
-            .offset(offset)
-            .limit(size)
-            .all())
+    lignes = (base_query
+              .with_entities(Log, Utilisateur.nom)
+              .order_by(Log.cree_le.desc())
+              .offset(offset)
+              .limit(size)
+              .all())
 
-    items = [LogRead.model_validate(log) for log in logs]
+    items = []
+    for log, nom in lignes:
+        item = LogRead.model_validate(log)
+        item.nom_utilisateur = nom
+        items.append(item)
 
     return LogListResponse(items=items, total=total, page=page, size=size)
