@@ -40,3 +40,8 @@ class UtilisateurAdminDetail(UtilisateurAdminRow):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class StockageUtilisateur(BaseModel):
+    utilise_octets: int
+    quota_octets: int
+

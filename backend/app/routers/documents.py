@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.tag import DocumentTagsUpdate
-from app.services import document_service, categorie_service, tag_service, log_service
+from app.services import document_service, categorie_service, tag_service, log_service,utilisateur_service
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
 from app.core.dependencies import require_user
 from app.models import Utilisateur
 from datetime import date
+from app.schemas.utilisateur import StockageUtilisateur
 
 
 
@@ -38,7 +39,6 @@ async def upload_document(
         )
         id_categorie = default.id
     else:
-       
         categorie = db.query(Categorie).filter(
             Categorie.id == id_categorie,
             Categorie.id_utilisateur == current_user.id,
@@ -47,6 +47,11 @@ async def upload_document(
             raise HTTPException(status_code=404, detail="Categorie introuvable")
 
     file_bytes = await file.read()
+    stockage = utilisateur_service.get_user_stockage(db=db,id_utilisateur=current_user.id)
+
+    if stockage.utilise_octets + len(file_bytes) > stockage.quota_octets:
+        raise HTTPException(status_code=413,detail="Quota de stockage atteint")
+
     metadata = DocumentCreate(titre=titre, auteur=auteur)
     document = document_service.create(
         db=db,
@@ -100,6 +105,10 @@ def vider_corbeille(request: Request,
     )
     return {"message": f"{count} document(s) supprime(s) definitivement"}
 
+@router.get("/stockage",response_model=StockageUtilisateur)
+def get_stockage(db: Session = Depends(get_db),
+                 current_user: Utilisateur = Depends(require_user)):
+    return utilisateur_service.get_user_stockage(db=db,id_utilisateur=current_user.id)
 
 @router.post("/{document_id}/restaurer")
 def restaurer_document(document_id: int,

@@ -11,7 +11,8 @@ from app.models.tags import Tag
 from app.models.categories import Categorie
 from app.models.historiques_recherches import HistoriqueRecherche
 from app.models.preferences_utilisateur_dashboard import PreferenceUtilisateurDashboard
-from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail
+from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail,StockageUtilisateur
+from app.core.config import STOCKAGE_QUOTA_OCTETS
 
 
 def list_users_admin(db: Session) -> list[UtilisateurAdminRow]:
@@ -102,6 +103,16 @@ def get_user_admin(db: Session, id_utilisateur: int) -> UtilisateurAdminDetail |
         dernier_login=dernier_login,
         stockage_octets=stockage_octets,
     )
+
+def get_user_stockage(db: Session,id_utilisateur: int) -> StockageUtilisateur:
+    utilise = ( db.query(func.sum(Version.taille_octets))
+                  .join(Document, Version.id_document == Document.id)
+                  .filter(Document.id_utilisateur == id_utilisateur)
+                  .scalar()
+               )
+    if utilise is None:
+        utilise = 0
+    return StockageUtilisateur(utilise_octets=int(utilise),quota_octets=STOCKAGE_QUOTA_OCTETS)
 
 
 def delete_user_admin(db: Session, id_utilisateur: int) -> bool:
