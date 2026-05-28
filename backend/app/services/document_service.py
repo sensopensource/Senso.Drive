@@ -11,7 +11,7 @@ from app.models.versions import Version
 from app.models.categories import Categorie
 from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.admin import StockageStats, StockageParType, StockageConsommateur, StockagePoint
-from app.services.extraction import extract_text
+from app.services.extraction import process_upload, is_image
 from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
 from datetime import date
@@ -25,8 +25,13 @@ STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
 
 ##MAPPING HTTP 
 MIME_TYPES = {
-    "pdf": "application/pdf",
+    "pdf":  "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "txt":  "text/plain",
+    "md":   "text/markdown",
+    "jpg":  "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png":  "image/png",
 }
 
 def _to_document_read(document: Document, version: Version | None) -> DocumentRead:
@@ -59,7 +64,7 @@ def create(
     id_utilisateur: int,
     id_categorie: int,
 ) -> DocumentRead:
-    contenu = extract_text(filename, file_bytes)
+    contenu, etat = process_upload(filename, file_bytes)
     storage_fichier, type_fichier = _save_binary(filename, file_bytes)
 
     document = Document(
@@ -76,6 +81,7 @@ def create(
         contenu=contenu,
         storage_fichier=storage_fichier,
         type_fichier=type_fichier,
+        etat=etat,
         id_document=document.id,
         taille_octets=len(file_bytes)
     )
@@ -527,7 +533,7 @@ def add_version(
     latest = get_latest_version(db=db, document_id=document_id)
     nouveau_numero = (latest.numero + 1) if latest else 1
 
-    contenu = extract_text(filename, file_bytes)
+    contenu, etat = process_upload(filename, file_bytes)
     storage_fichier, type_fichier = _save_binary(filename, file_bytes)
 
     version = Version(
@@ -535,6 +541,7 @@ def add_version(
         contenu=contenu,
         storage_fichier=storage_fichier,
         type_fichier=type_fichier,
+        etat=etat,
         id_document=document_id,
         taille_octets=len(file_bytes)
     )
@@ -658,6 +665,52 @@ def resume_background(document_id: int, id_utilisateur: int):
             action="llm.error",
             message=f"Echec resume auto du document #{document_id} : {e}",
             contexte={"source":      "resume",
+                      "id_document": document_id,
+                      "erreur":      str(e)},
+            id_utilisateur=id_utilisateur,
+        )
+    finally:
+        db.close()
+
+
+def analyser_image_background(document_id: int, id_utilisateur: int):
+    db = SessionLocal()
+    try:
+        version = get_latest_version(db=db, document_id=document_id)
+        if version is None:
+            return
+
+        image_bytes = (STORAGE_DIR / version.storage_fichier).read_bytes()
+        media_type = MIME_TYPES[version.type_fichier]
+        description = llm_service.analyser_image(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            image_bytes=image_bytes,
+            media_type=media_type,
+        )
+        version.contenu = description
+        version.etat = "pret"
+        db.commit()
+
+        log_action(
+            db=db,
+            niveau="ok",
+            action="document.analyse.auto",
+            message=f"Analyse vision generee pour le document #{document_id}",
+            contexte={"id_document": document_id},
+            id_utilisateur=id_utilisateur,
+        )
+    except Exception as e:
+        version = get_latest_version(db=db, document_id=document_id)
+        if version is not None:
+            version.etat = "echec"
+            db.commit()
+        log_action(
+            db=db,
+            niveau="err",
+            action="llm.error",
+            message=f"Echec analyse vision du document #{document_id} : {e}",
+            contexte={"source":      "vision",
                       "id_document": document_id,
                       "erreur":      str(e)},
             id_utilisateur=id_utilisateur,

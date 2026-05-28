@@ -4,6 +4,7 @@ from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.tag import DocumentTagsUpdate
 from app.services import document_service, categorie_service, tag_service, log_service,utilisateur_service
+from app.services.extraction import is_image
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
 from app.core.dependencies import require_user
@@ -70,9 +71,14 @@ async def upload_document(
         id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
-    background_tasks.add_task(document_service.resume_background,
-                              document.id,
-                              current_user.id)
+    if is_image(file.filename):
+        background_tasks.add_task(document_service.analyser_image_background,
+                                  document.id,
+                                  current_user.id)
+    else:
+        background_tasks.add_task(document_service.resume_background,
+                                  document.id,
+                                  current_user.id)
     return document
 
 
@@ -318,9 +324,14 @@ async def upload_nouvelle_version(
         id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
-    background_tasks.add_task(document_service.resume_background,
-                              document.id,
-                              current_user.id)
+    if is_image(file.filename):
+        background_tasks.add_task(document_service.analyser_image_background,
+                                  document.id,
+                                  current_user.id)
+    else:
+        background_tasks.add_task(document_service.resume_background,
+                                  document.id,
+                                  current_user.id)
     return document
 
 

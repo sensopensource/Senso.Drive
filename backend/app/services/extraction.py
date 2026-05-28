@@ -1,7 +1,12 @@
 from pypdf import PdfReader
-from docx import Document as DocxDocument 
-from io import BytesIO 
+from docx import Document as DocxDocument
+from io import BytesIO
+import os
 from fastapi import HTTPException
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+
+
 #fonction qui extrait le text dun pdf
 def extract_pdf(file_bytes: bytes) -> str:
     reader = PdfReader(BytesIO(file_bytes))
@@ -16,15 +21,24 @@ def extract_docx(file_bytes: bytes) -> str:
     text = ""
     for paragraph in doc.paragraphs:
         text += paragraph.text +"\n"
-    return text 
+    return text
 
 
-#fonction qui choisi le type d'extraction selon le type du fichier
-def extract_text(filename: str,file_bytes: bytes) -> str:
-    if filename.lower().endswith(".pdf"):
-        return extract_pdf(file_bytes)
-    elif filename.lower().endswith(".docx"):
-        return extract_docx(file_bytes)
+def is_image(filename: str) -> bool:
+    return os.path.splitext(filename)[1].lower() in IMAGE_EXTENSIONS
+
+
+# classe + valide le fichier uploade et renvoie (contenu, etat).
+# image -> pas de texte, l'analyse vision se fera en tache de fond (etat 'a_analyser').
+def process_upload(filename: str, file_bytes: bytes) -> tuple[str, str]:
+    extension = os.path.splitext(filename)[1].lower()
+    if extension == ".pdf":
+        return extract_pdf(file_bytes), "pret"
+    elif extension == ".docx":
+        return extract_docx(file_bytes), "pret"
+    elif extension in (".txt", ".md"):
+        return file_bytes.decode("utf-8", errors="replace"), "pret"
+    elif extension in IMAGE_EXTENSIONS:
+        return "", "a_analyser"
     else:
-        raise HTTPException(status_code=401,detail=f"Fromat du fichier {filename} n'est pas supporte")
-
+        raise HTTPException(status_code=415, detail=f"Format du fichier {filename} n'est pas supporte")

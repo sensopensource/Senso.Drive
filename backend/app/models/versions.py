@@ -15,6 +15,7 @@ class Version(Base):
     type_fichier = Column(Text,nullable =False)
     search_vector = Column(TSVECTOR)
     resume_llm = Column(Text,nullable=True)
+    etat = Column(Text, nullable=False, server_default="pret")
     date_upload = Column(DateTime(timezone=True),server_default=func.now())
     id_document = Column(Integer, ForeignKey('documents.id'), nullable = False)
     taille_octets = Column(BigInteger, nullable=False)

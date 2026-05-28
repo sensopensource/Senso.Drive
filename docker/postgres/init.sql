@@ -55,6 +55,7 @@ CREATE TABLE versions(
     type_fichier TEXT NOT NULL,
     search_vector tsvector,
     resume_LLM TEXT,
+    etat TEXT NOT NULL DEFAULT 'pret' CHECK (etat IN ('a_analyser', 'pret', 'echec')),
     date_upload TIMESTAMPTZ DEFAULT NOW(),
     id_document int REFERENCES documents(id) ON DELETE CASCADE,
     taille_octets bigint NOT NULL
@@ -126,7 +127,7 @@ CREATE TABLE suggestions(
 CREATE TABLE consommations_tokens(
     id SERIAL PRIMARY KEY,
     id_utilisateur int REFERENCES utilisateurs(id) NOT NULL,
-    source TEXT NOT NULL CHECK (source IN ('suggestion', 'resume')),
+    source TEXT NOT NULL CHECK (source IN ('suggestion', 'resume', 'vision')),
     modele TEXT NOT NULL,
     tokens_in int NOT NULL,
     tokens_out int NOT NULL,

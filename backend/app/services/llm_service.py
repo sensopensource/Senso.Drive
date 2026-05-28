@@ -1,4 +1,5 @@
 import time
+import base64
 import httpx
 import anthropic
 from sqlalchemy.orm import Session
@@ -6,6 +7,60 @@ from app.services import consommation_service
 from app.core.config import ANTHROPIC_API_KEY, OLLAMA_BASE_URL, OLLAMA_MODEL, LLM_RESUME_BACKEND
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+def analyser_image(db: Session, id_utilisateur: int, image_bytes: bytes, media_type: str) -> str:
+    debut = time.perf_counter()
+    modele = "claude-sonnet-4-6"
+    donnee = base64.standard_b64encode(image_bytes).decode("utf-8")
+    try:
+        message = client.messages.create(
+            model=modele,
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {"type": "base64", "media_type": media_type, "data": donnee},
+                        },
+                        {
+                            "type": "text",
+                            "text": "Décris cette image en français de manière détaillée. "
+                                    "Si elle contient du texte, transcris-le intégralement.",
+                        },
+                    ],
+                }
+            ],
+        )
+        latence_ms = int((time.perf_counter() - debut) * 1000)
+
+        consommation_service.enregistrer(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            source="vision",
+            modele=modele,
+            tokens_in=message.usage.input_tokens,
+            tokens_out=message.usage.output_tokens,
+            latence_ms=latence_ms,
+            statut="ok",
+        )
+        return message.content[0].text
+
+    except Exception as e:
+        consommation_service.enregistrer(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            source="vision",
+            modele=modele,
+            tokens_in=0,
+            tokens_out=0,
+            latence_ms=int((time.perf_counter() - debut) * 1000),
+            statut="err",
+            message_erreur=str(e),
+        )
+        raise
 
 
 def generer_resume(db: Session, id_utilisateur: int, contenu: str) -> str:

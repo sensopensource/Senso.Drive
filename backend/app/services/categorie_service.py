@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from app.models.categories import Categorie
 from app.models.documents import Document
+from app.models.versions import Version
 from app.schemas.categorie import CategorieRead
 
 
@@ -74,11 +75,23 @@ def list_documents_visibles_pour_agent(db: Session,
     branches = _branches_privees_cte(id_utilisateur)
     ids_privees = select(branches.c.id)
 
+    # derniere version de chaque document (l'agent juge sur l'etat de la version courante)
+    derniere_version = (
+        select(Version.id_document.label("id_document"),
+               func.max(Version.numero).label("numero"))
+        .group_by(Version.id_document)
+        .subquery()
+    )
+
     return (
         db.query(Document)
+        .join(derniere_version, derniere_version.c.id_document == Document.id)
+        .join(Version, and_(Version.id_document == Document.id,
+                            Version.numero == derniere_version.c.numero))
         .filter(
             Document.id_utilisateur == id_utilisateur,
             Document.deleted_at.is_(None),
+            Version.etat == "pret",
             or_(
                 Document.id_categorie.is_(None),
                 ~Document.id_categorie.in_(ids_privees),
