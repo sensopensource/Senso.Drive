@@ -11,6 +11,8 @@ import type { CategorieNode } from "../types"
 import NewCategorieModal from "./NewCategorieModal"
 import { useAgent } from "../contexts/AgentContext"
 import { useAuth } from "../contexts/AuthContext"
+import { useStockage } from "../hooks/useStockage"
+import { formatOctets } from "../lib/format"
 
 const CAT_COLORS = ["var(--type-pdf)", "var(--type-docx)", "var(--type-txt)", "var(--type-md)"]
 
@@ -245,10 +247,14 @@ function AppSidebar() {
   const { total: totalCorbeille } = useCorbeille(1, 1)
   const { pendingCount, startAnalysis, openSuggestions, analysisRunning } = useAgent()
   const { user } = useAuth()
+  const { utilise, quota } = useStockage()
   const [newCatTarget, setNewCatTarget] = useState<NewCatTarget>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
   const [rootDragOver, setRootDragOver] = useState(false)
+  const [stockageOuvert, setStockageOuvert] = useState(false)
+
+  const pctStockage = quota > 0 ? Math.min(100, Math.round((utilise / quota) * 100)) : 0
 
   const tree = useMemo(() => buildTree(categories), [categories])
 
@@ -508,16 +514,20 @@ function AppSidebar() {
         )}
       </div>
 
-      {/* Footer storage (placeholder) */}
-      <div className="p-3 hair-t">
+      {/* Footer storage */}
+      <button
+        type="button"
+        onClick={() => setStockageOuvert(true)}
+        className="p-3 hair-t text-left hover:bg-elev transition-colors"
+      >
         <div className="flex items-center justify-between text-[10.5px] font-mono text-mute mb-1.5">
           <span>Stockage</span>
-          <span>— / 10 GB</span>
+          <span>{formatOctets(utilise)} / {formatOctets(quota)}</span>
         </div>
         <div className="h-[3px] bg-line w-full">
-          <div className="h-full bg-soft" style={{ width: '0%' }}></div>
+          <div className="h-full bg-soft" style={{ width: `${pctStockage}%` }}></div>
         </div>
-      </div>
+      </button>
 
       {newCatTarget && (
         <NewCategorieModal
@@ -525,6 +535,43 @@ function AppSidebar() {
           parentNom={newCatTarget.parentNom}
           onClose={() => setNewCatTarget(null)}
         />
+      )}
+
+      {stockageOuvert && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setStockageOuvert(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-[420px] bg-panel hair flex flex-col"
+          >
+            <div className="px-5 py-3 hair-b">
+              <div className="section-label">Stockage</div>
+            </div>
+            <div className="p-5">
+              <div className="flex items-end justify-between mb-3">
+                <span className="text-[22px] font-mono text-bright">{formatOctets(utilise)}</span>
+                <span className="text-[12px] font-mono text-mute">/ {formatOctets(quota)}</span>
+              </div>
+              <div className="h-1.5 bg-line w-full mb-1.5">
+                <div className="h-full bg-soft" style={{ width: `${pctStockage}%` }}></div>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono text-mute mb-5">
+                <span>{pctStockage}% utilisé</span>
+                <span>{formatOctets(Math.max(0, quota - utilise))} libre</span>
+              </div>
+              <p className="text-[12px] text-soft">
+                Pour augmenter votre espace de stockage, contactez Senso.
+              </p>
+              <div className="flex items-center justify-end mt-5">
+                <button onClick={() => setStockageOuvert(false)} className="btn-ghost">
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmDelete && (

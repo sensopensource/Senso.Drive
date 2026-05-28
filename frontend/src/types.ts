@@ -150,3 +150,8 @@ export type LogListResponse = {
     page: number
     size: number
 }
+
+export type StockageUtilisateur = {
+    utilise_octets: number
+    quota_octets: number
+}

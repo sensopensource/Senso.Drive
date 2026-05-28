@@ -5,6 +5,19 @@ export function formatNombre(n: number): string {
   return n.toLocaleString('fr-FR')
 }
 
+// 0 o / 1,2 Ko / 3,4 Mo / 1,5 Go — base 1024, convention FR
+export function formatOctets(n: number): string {
+  if (n < 1024) return `${n} o`
+  const unites = ['Ko', 'Mo', 'Go', 'To']
+  let valeur = n / 1024
+  let i = 0
+  while (valeur >= 1024 && i < unites.length - 1) {
+    valeur /= 1024
+    i++
+  }
+  return `${valeur.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ${unites[i]}`
+}
+
 // 94.2k / 1.3M — pour les grandes valeurs (tokens)
 export function formatCompact(n: number): string {
   if (n < 1000) return String(n)
