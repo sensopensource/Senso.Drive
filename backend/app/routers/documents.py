@@ -295,6 +295,21 @@ def download_document(document_id: int,
        return FileResponse(path=fichier.path,filename=fichier.filename,media_type=fichier.media_type)
 
 
+@router.get("/{document_id}/apercu")
+def apercu_document(document_id: int,
+                    db: Session = Depends(get_db),
+                    current_user: Utilisateur = Depends(require_user)):
+    fichier = document_service.download_document_latest_version(db=db,
+                                                                document_id=document_id,
+                                                                id_utilisateur=current_user.id)
+    if not fichier:
+        raise HTTPException(status_code=404, detail="Document non trouve")
+    return FileResponse(path=fichier.path,
+                        filename=fichier.filename,
+                        media_type=fichier.media_type,
+                        content_disposition_type="inline")
+
+
 @router.post("/{document_id}/versions", response_model=DocumentRead)
 async def upload_nouvelle_version(
     background_tasks: BackgroundTasks,
