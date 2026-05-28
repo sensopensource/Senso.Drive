@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from app.database import SessionLocal
 from sqlalchemy import text
-from app.routers import documents, auth, categories, tags, historiques, agent, admin, preferences
+from app.routers import documents, auth, categories, tags, historiques, agent, admin, preferences, dashboard
 
 app = FastAPI()
 
@@ -19,5 +19,6 @@ app.include_router(historiques.router)
 app.include_router(agent.router)
 app.include_router(admin.router)
 app.include_router(preferences.router)
+app.include_router(dashboard.router)
 
 
