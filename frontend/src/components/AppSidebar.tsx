@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, type KeyboardEvent } from "react"
-import { NavLink, useNavigate, useSearchParams } from "react-router-dom"
+import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useCategories } from "../hooks/useCategories"
 import { useDeleteCategorie } from "../hooks/useDeleteCategorie"
 import { useDocuments } from "../hooks/useDocuments"
@@ -240,6 +240,7 @@ function CategorieTreeNode({
 function AppSidebar() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { categories, updateCategorie } = useCategories()
   const { updateDocument } = useUpdateDocument()
   const { deleteCategorie, isPending: isDeleting } = useDeleteCategorie()
@@ -253,6 +254,8 @@ function AppSidebar() {
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
   const [rootDragOver, setRootDragOver] = useState(false)
   const [stockageOuvert, setStockageOuvert] = useState(false)
+  // Rubrique Admin repliable : ouverte d'office si on est deja sur une page /admin
+  const [adminOuvert, setAdminOuvert] = useState(() => location.pathname.startsWith('/admin'))
 
   const pctStockage = quota > 0 ? Math.min(100, Math.round((utilise / quota) * 100)) : 0
 
@@ -472,16 +475,24 @@ function AppSidebar() {
           ))}
         </div>
 
-        {/* Section Admin (reservee aux admins) */}
+        {/* Section Admin (reservee aux admins) — repliable */}
         {user?.role === 'admin' && (
           <div className="px-3 py-1.5 mt-2">
-            <div className="section-label px-2 mb-1 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setAdminOuvert(o => !o)}
+              className="section-label w-full px-2 mb-1 flex items-center gap-1.5 hover:text-soft transition-colors"
+            >
+              <span className="material-symbols-outlined text-[13px] text-type-md">{adminOuvert ? 'expand_more' : 'chevron_right'}</span>
               <span className="text-type-md">Admin</span>
-              <span className="material-symbols-outlined text-[11px] text-type-md">shield</span>
-            </div>
+              <span className="material-symbols-outlined text-[11px] text-type-md ml-auto">shield</span>
+            </button>
 
+            {adminOuvert && (
+            <>
             <NavLink
               to="/admin"
+              end
               className={({ isActive }) =>
                 `relative flex items-center gap-2 px-2 py-1.5 text-[12.5px] transition-colors ${
                   isActive
@@ -537,6 +548,8 @@ function AppSidebar() {
                 </button>
               )
             ))}
+            </>
+            )}
           </div>
         )}
       </div>
