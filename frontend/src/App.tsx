@@ -3,7 +3,6 @@ import LoginPage from "./pages/LoginPage"
 import HomePage from "./pages/HomePage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import RegisterPage from "./pages/RegisterPage"
-import CategoriesPage from "./pages/CategoriesPage"
 import DocumentsPage from "./pages/DocumentsPage"
 import CorbeillePage from "./pages/CorbeillePage"
 import AdminDashboardPage from "./pages/AdminDashboardPage"
@@ -30,11 +29,6 @@ function App() {
               <Route path="/home" element={
                 <ProtectedRoute>
                   <HomePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/categories" element={
-                <ProtectedRoute>
-                  <CategoriesPage />
                 </ProtectedRoute>
               } />
               <Route path="/documents" element={
