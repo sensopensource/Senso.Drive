@@ -16,7 +16,7 @@ import AppShell from "../components/AppShell"
 import SubBar from "../components/SubBar"
 import UploadModal from "../components/UploadModal"
 import NewCategorieModal from "../components/NewCategorieModal"
-import DocumentInlinePanel from "../components/DocumentInlinePanel"
+import DocumentViewer from "../components/DocumentViewer"
 import SearchFiltersPanel from "../components/SearchFilters"
 import { useDeleteDocument } from "../hooks/useDeleteDocument"
 import { useDeleteCategorie } from "../hooks/useDeleteCategorie"
@@ -323,12 +323,12 @@ function DocumentsPage() {
               </div>
             )}
           </div>
-
-          {selectedId !== null && (
-            <DocumentInlinePanel documentId={selectedId} onClose={() => setSelectedId(null)} />
-          )}
         </div>
       </div>
+
+      {selectedId !== null && (
+        <DocumentViewer key={selectedId} documentId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
 
       {selCount > 0 && (
         <SelectionBar
