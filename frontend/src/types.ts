@@ -155,3 +155,9 @@ export type StockageUtilisateur = {
     utilise_octets: number
     quota_octets: number
 }
+
+export type DashboardUtilisateur = {
+    documents_total: number
+    docs_par_type: Record<string, number>
+    suggestions_en_attente: number
+}
