@@ -18,7 +18,8 @@ export function useDeleteCategorie() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      showToast("Categorie supprimé", 'success')
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      showToast("Dossier supprimé", 'success')
     },
     onError: (error) => {
       showToast(error.message, 'error')

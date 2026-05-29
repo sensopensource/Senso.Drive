@@ -4,17 +4,20 @@ import { setDndPayload } from "../../lib/dnd"
 import { formatDateCourte, formatOctets } from "../../lib/format"
 import TypeIcon from "../TypeIcon"
 import ItemMenu from "../ItemMenu"
+import SelectableIcon from "./SelectableIcon"
 import type { DocActions } from "./actions"
 
 type Props = {
   document: Document
   selected: boolean
+  checked: boolean
+  onToggle: () => void
   onOpen: () => void
   actions: DocActions
 }
 
 // Carte document (vue grille). NB : l'aperçu réel (thumbnail) est différé — cf #6-bis.
-function DocCard({ document, selected, onOpen, actions }: Props) {
+function DocCard({ document, selected, checked, onToggle, onOpen, actions }: Props) {
   const [renaming, setRenaming] = useState(false)
   const [nomEdit, setNomEdit] = useState(document.titre)
 
@@ -34,11 +37,13 @@ function DocCard({ document, selected, onOpen, actions }: Props) {
       onClick={renaming ? undefined : onOpen}
       draggable={!renaming}
       onDragStart={(e) => setDndPayload(e, { kind: 'doc', id: document.id })}
-      className={`group bg-panel p-4 cursor-pointer transition-colors hover:bg-elev hover:!border-line2 ${selected ? 'hair !border-type-ai' : 'hair'}`}
+      className={`group bg-panel p-4 cursor-pointer transition-colors hover:bg-elev hover:!border-line2 ${selected ? 'hair !border-type-ai' : 'hair'} ${checked ? '!bg-type-ai/[0.06] !border-type-ai' : ''}`}
     >
       <div className="flex items-start justify-between mb-[18px]">
         <span className="w-[34px] h-[34px] hair flex items-center justify-center">
-          <TypeIcon type={document.type_fichier} />
+          <SelectableIcon checked={checked} onToggle={onToggle} size={20}>
+            <TypeIcon type={document.type_fichier} size={20} />
+          </SelectableIcon>
         </span>
         <ItemMenu
           className="opacity-0 group-hover:opacity-100"

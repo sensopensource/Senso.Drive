@@ -9,6 +9,10 @@ type Props = {
   onSelect: (id: number) => void
   isSearchMode: boolean
   subFolders?: Categorie[]
+  selDocs: Set<number>
+  selFolders: Set<number>
+  onToggleDoc: (id: number) => void
+  onToggleFolder: (id: number) => void
   onOpenFolder?: (id: number) => void
   onDropOnFolder?: (payload: { kind: 'doc' | 'folder'; id: number }, targetCategorieId: number) => void
   docActions: DocActions
@@ -23,6 +27,10 @@ function DocumentsTable({
   onSelect,
   isSearchMode,
   subFolders = [],
+  selDocs,
+  selFolders,
+  onToggleDoc,
+  onToggleFolder,
   onOpenFolder,
   onDropOnFolder,
   docActions,
@@ -51,6 +59,8 @@ function DocumentsTable({
             key={`folder-${folder.id}`}
             categorie={folder}
             index={idx}
+            checked={selFolders.has(folder.id)}
+            onToggle={() => onToggleFolder(folder.id)}
             onClick={() => onOpenFolder?.(folder.id)}
             onDrop={onDropOnFolder}
             actions={folderActions}
@@ -67,6 +77,8 @@ function DocumentsTable({
             document={doc}
             index={subFolders.length + idx}
             isSelected={selectedId === doc.id}
+            checked={selDocs.has(doc.id)}
+            onToggle={() => onToggleDoc(doc.id)}
             onClick={() => onSelect(doc.id)}
             actions={docActions}
             extrait={isSearchMode ? (doc as Document & { extrait?: string | null }).extrait : null}

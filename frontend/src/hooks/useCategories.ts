@@ -36,7 +36,7 @@ export function useCategories() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      showToast(`Catégorie "${data.nom}" créée`, 'success')
+      showToast(`Dossier "${data.nom}" créé`, 'success')
     },
     onError: (e) => showToast(e.message, 'error'),
   })
@@ -63,7 +63,7 @@ export function useCategories() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      showToast(`Catégorie modifiée`, 'success')
+      showToast(`Dossier mis à jour`, 'success')
     },
     onError: (e) => showToast(e.message, 'error'),
   })

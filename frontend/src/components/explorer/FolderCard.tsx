@@ -2,18 +2,21 @@ import { useState, type KeyboardEvent } from "react"
 import type { Categorie } from "../../types"
 import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "../../lib/dnd"
 import ItemMenu from "../ItemMenu"
+import SelectableIcon from "./SelectableIcon"
 import type { FolderActions } from "./actions"
 
 type Props = {
   categorie: Categorie
   nbSousDossiers: number
+  checked: boolean
+  onToggle: () => void
   onOpen: () => void
   actions: FolderActions
   onDrop?: (payload: DndPayload, targetId: number) => void
 }
 
 // Carte dossier (vue grille) : icône, nom, méta (count + sous-dossiers ou badge privé), kebab, drag & drop.
-function FolderCard({ categorie, nbSousDossiers, onOpen, actions, onDrop }: Props) {
+function FolderCard({ categorie, nbSousDossiers, checked, onToggle, onOpen, actions, onDrop }: Props) {
   const [dragOver, setDragOver] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [nomEdit, setNomEdit] = useState(categorie.nom)
@@ -56,12 +59,14 @@ function FolderCard({ categorie, nbSousDossiers, onOpen, actions, onDrop }: Prop
       onDrop={handleDrop}
       className={`group relative bg-panel p-4 cursor-pointer transition-colors ${
         dragOver ? 'border border-dashed border-type-ai bg-type-ai/[0.06]' : 'hair hover:bg-elev hover:!border-line2'
-      }`}
+      } ${checked && !dragOver ? '!border-type-ai bg-type-ai/[0.06]' : ''}`}
     >
       <div className="flex items-start justify-between mb-[18px]">
-        <span className="material-symbols-outlined text-[30px]" style={{ color: priv ? 'var(--mute)' : 'var(--type-md)' }}>
-          {priv ? 'folder_special' : 'folder'}
-        </span>
+        <SelectableIcon checked={checked} onToggle={onToggle} size={30}>
+          <span className="material-symbols-outlined text-[30px]" style={{ color: priv ? 'var(--mute)' : 'var(--type-md)' }}>
+            {priv ? 'folder_special' : 'folder'}
+          </span>
+        </SelectableIcon>
         <ItemMenu
           className="opacity-0 group-hover:opacity-100"
           actions={[

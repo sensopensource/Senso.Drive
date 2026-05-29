@@ -8,6 +8,10 @@ import { getAncestors, getDirectChildren } from "../lib/categoriesTree"
 import type { DndPayload } from "../lib/dnd"
 import DocumentsTable from "../components/DocumentsTable"
 import ExplorerGrid from "../components/explorer/ExplorerGrid"
+import SelectionBar from "../components/explorer/SelectionBar"
+import MoveToModal from "../components/explorer/MoveToModal"
+import ConfirmDeleteFolderModal from "../components/explorer/ConfirmDeleteFolderModal"
+import type { Categorie } from "../types"
 import AppShell from "../components/AppShell"
 import SubBar from "../components/SubBar"
 import UploadModal from "../components/UploadModal"
@@ -26,6 +30,10 @@ function DocumentsPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [newFolderOpen, setNewFolderOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selDocs, setSelDocs] = useState<Set<number>>(new Set())
+  const [selFolders, setSelFolders] = useState<Set<number>>(new Set())
+  const [moveOpen, setMoveOpen] = useState(false)
+  const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<Categorie | null>(null)
   const [page, setPage] = useState(1)
   const [vue, setVue] = useState<Vue>('liste')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -87,11 +95,53 @@ function DocumentsPage() {
     }
   }, [searchParams, setSearchParams])
 
-  // Reset de la pagination quand on change de dossier (ajustement d'etat pendant le rendu)
+  // Reset de la pagination + de la selection quand on change de dossier (ajustement d'etat pendant le rendu)
   const [catPrec, setCatPrec] = useState(filterCategorie)
   if (filterCategorie !== catPrec) {
     setCatPrec(filterCategorie)
     setPage(1)
+    setSelDocs(new Set())
+    setSelFolders(new Set())
+  }
+
+  const toggleDoc = (id: number) => setSelDocs(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+  const toggleFolder = (id: number) => setSelFolders(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+  const clearSelection = () => {
+    setSelDocs(new Set())
+    setSelFolders(new Set())
+  }
+  const selCount = selDocs.size + selFolders.size
+
+  // Dossiers sélectionnés qui ne sont pas vides (docs directs OU sous-dossiers) :
+  // leur suppression est récursive (docs → corbeille, sous-dossiers supprimés définitivement).
+  const nbDossiersNonVides = [...selFolders].filter(id => {
+    const cat = categories.find(c => c.id === id)
+    const aDesSousDossiers = categories.some(c => c.id_parent === id)
+    return (cat?.count ?? 0) > 0 || aDesSousDossiers
+  }).length
+
+  const handleDeleteSelection = () => {
+    selDocs.forEach(id => deleteDocument(id))
+    selFolders.forEach(id => deleteCategorie(id))
+    clearSelection()
+  }
+
+  const handleMoveSelection = (targetId: number) => {
+    const targetNom = categories.find(c => c.id === targetId)?.nom ?? '?'
+    selDocs.forEach(id => updateDocument({ id, id_categorie: targetId, successMessage: `Déplacé dans "${targetNom}"` }))
+    selFolders.forEach(id => updateCategorie({ id, id_parent: targetId, updateParent: true }))
+    setMoveOpen(false)
+    clearSelection()
   }
 
   const handleOpenFolder = (id: number) => {
@@ -128,7 +178,10 @@ function DocumentsPage() {
   const folderActions: FolderActions = {
     rename: (id, nom) => updateCategorie({ id, nom }),
     togglePrivee: (cat) => updateCategorie({ id: cat.id, privee: !cat.privee }),
-    remove: (id) => deleteCategorie(id),
+    remove: (id) => {
+      const cat = categories.find(c => c.id === id)
+      if (cat) setConfirmDeleteFolder(cat)
+    },
   }
 
   const dossierCourant = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null
@@ -226,6 +279,10 @@ function DocumentsPage() {
                   categories={categories}
                   selectedId={selectedId}
                   isSearchMode={isSearchMode}
+                  selDocs={selDocs}
+                  selFolders={selFolders}
+                  onToggleDoc={toggleDoc}
+                  onToggleFolder={toggleFolder}
                   onOpenFolder={handleOpenFolder}
                   onSelectDoc={setSelectedId}
                   onDropOnFolder={handleDropOnFolder}
@@ -239,6 +296,10 @@ function DocumentsPage() {
                   onSelect={setSelectedId}
                   isSearchMode={isSearchMode}
                   subFolders={subFolders}
+                  selDocs={selDocs}
+                  selFolders={selFolders}
+                  onToggleDoc={toggleDoc}
+                  onToggleFolder={toggleFolder}
                   onOpenFolder={handleOpenFolder}
                   onDropOnFolder={handleDropOnFolder}
                   docActions={docActions}
@@ -268,6 +329,36 @@ function DocumentsPage() {
           )}
         </div>
       </div>
+
+      {selCount > 0 && (
+        <SelectionBar
+          nbDocs={selDocs.size}
+          nbFolders={selFolders.size}
+          nbDossiersNonVides={nbDossiersNonVides}
+          onMove={() => setMoveOpen(true)}
+          onDelete={handleDeleteSelection}
+          onClear={clearSelection}
+        />
+      )}
+
+      {moveOpen && (
+        <MoveToModal
+          categories={categories}
+          movingFolderIds={selFolders}
+          count={selCount}
+          onClose={() => setMoveOpen(false)}
+          onConfirm={handleMoveSelection}
+        />
+      )}
+
+      {confirmDeleteFolder && (
+        <ConfirmDeleteFolderModal
+          categorie={confirmDeleteFolder}
+          categories={categories}
+          onClose={() => setConfirmDeleteFolder(null)}
+          onConfirm={() => deleteCategorie(confirmDeleteFolder.id)}
+        />
+      )}
 
       {isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} />}
       {newFolderOpen && (

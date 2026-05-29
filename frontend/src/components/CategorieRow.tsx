@@ -2,17 +2,20 @@ import { useState, type KeyboardEvent } from "react"
 import type { Categorie } from "../types"
 import { setDndPayload, getDndPayload, isDndDragging } from "../lib/dnd"
 import ItemMenu from "./ItemMenu"
+import SelectableIcon from "./explorer/SelectableIcon"
 import type { FolderActions } from "./explorer/actions"
 
 type Props = {
   categorie: Categorie
   index: number
+  checked: boolean
+  onToggle: () => void
   onClick: () => void
   actions: FolderActions
   onDrop?: (payload: { kind: 'doc' | 'folder'; id: number }, targetCategorieId: number) => void
 }
 
-function CategorieRow({ categorie, index, onClick, actions, onDrop }: Props) {
+function CategorieRow({ categorie, index, checked, onToggle, onClick, actions, onDrop }: Props) {
   const baseRowClass = index % 2 === 0 ? "row" : "row-alt"
   const [isDragOver, setIsDragOver] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -56,12 +59,14 @@ function CategorieRow({ categorie, index, onClick, actions, onDrop }: Props) {
       onDrop={handleDrop}
       className={`group ${baseRowClass} flex items-center px-6 h-[44px] hair-b cursor-pointer transition-colors ${
         isDragOver ? '!bg-elev outline outline-1 outline-type-ai -outline-offset-1' : ''
-      }`}
+      } ${checked ? 'bg-type-ai/[0.06] shadow-[inset_2px_0_0_var(--type-ai)]' : ''}`}
     >
       <div className="flex-1 min-w-0 flex items-center gap-2.5">
-        <span className="material-symbols-outlined text-[18px]" style={{ color: priv ? 'var(--mute)' : 'var(--type-md)' }}>
-          {priv ? 'folder_special' : 'folder'}
-        </span>
+        <SelectableIcon checked={checked} onToggle={onToggle}>
+          <span className="material-symbols-outlined text-[18px]" style={{ color: priv ? 'var(--mute)' : 'var(--type-md)' }}>
+            {priv ? 'folder_special' : 'folder'}
+          </span>
+        </SelectableIcon>
         {renaming ? (
           <input
             autoFocus

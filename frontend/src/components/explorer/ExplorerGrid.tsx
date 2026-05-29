@@ -11,6 +11,10 @@ type Props = {
   categories: Categorie[]
   selectedId: number | null
   isSearchMode: boolean
+  selDocs: Set<number>
+  selFolders: Set<number>
+  onToggleDoc: (id: number) => void
+  onToggleFolder: (id: number) => void
   onOpenFolder: (id: number) => void
   onSelectDoc: (id: number) => void
   onDropOnFolder: (payload: DndPayload, targetId: number) => void
@@ -22,7 +26,7 @@ const GRID = "grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3.5"
 const GRP = "font-mono text-[10px] uppercase tracking-[0.12em] text-mute mb-3.5"
 
 // Vue grille de l'explorateur : dossiers en cartes puis documents en cartes.
-function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode, onOpenFolder, onSelectDoc, onDropOnFolder, docActions, folderActions }: Props) {
+function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode, selDocs, selFolders, onToggleDoc, onToggleFolder, onOpenFolder, onSelectDoc, onDropOnFolder, docActions, folderActions }: Props) {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5">
       {!isSearchMode && subFolders.length > 0 && (
@@ -34,6 +38,8 @@ function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode,
                 key={f.id}
                 categorie={f}
                 nbSousDossiers={getDirectChildren(categories, f.id).length}
+                checked={selFolders.has(f.id)}
+                onToggle={() => onToggleFolder(f.id)}
                 onOpen={() => onOpenFolder(f.id)}
                 onDrop={onDropOnFolder}
                 actions={folderActions}
@@ -48,7 +54,7 @@ function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode,
           <div className={GRP}>Documents · {items.length}</div>
           <div className={GRID}>
             {items.map(d => (
-              <DocCard key={d.id} document={d} selected={selectedId === d.id} onOpen={() => onSelectDoc(d.id)} actions={docActions} />
+              <DocCard key={d.id} document={d} selected={selectedId === d.id} checked={selDocs.has(d.id)} onToggle={() => onToggleDoc(d.id)} onOpen={() => onSelectDoc(d.id)} actions={docActions} />
             ))}
           </div>
         </>

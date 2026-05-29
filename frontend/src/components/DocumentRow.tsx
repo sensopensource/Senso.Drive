@@ -4,18 +4,21 @@ import { setDndPayload } from "../lib/dnd"
 import { formatOctets, formatDateCourte } from "../lib/format"
 import TypeIcon from "./TypeIcon"
 import ItemMenu from "./ItemMenu"
+import SelectableIcon from "./explorer/SelectableIcon"
 import type { DocActions } from "./explorer/actions"
 
 type Props = {
   document: Document
   index: number
   isSelected: boolean
+  checked: boolean
+  onToggle: () => void
   onClick: () => void
   actions: DocActions
   extrait?: string | null
 }
 
-function DocumentRow({ document, index, isSelected, onClick, actions, extrait }: Props) {
+function DocumentRow({ document, index, isSelected, checked, onToggle, onClick, actions, extrait }: Props) {
   const baseRowClass = index % 2 === 0 ? "row" : "row-alt"
   const selectedClass = isSelected ? "row-selected" : ""
   const enAnalyse = document.etat === 'a_analyser'
@@ -40,10 +43,12 @@ function DocumentRow({ document, index, isSelected, onClick, actions, extrait }:
       onClick={renaming ? undefined : onClick}
       draggable={!renaming}
       onDragStart={(e) => setDndPayload(e, { kind: 'doc', id: document.id })}
-      className={`group ${baseRowClass} ${selectedClass} flex items-center px-6 h-[44px] hair-b cursor-pointer transition-colors`}
+      className={`group ${baseRowClass} ${selectedClass} ${checked ? 'bg-type-ai/[0.06] shadow-[inset_2px_0_0_var(--type-ai)]' : ''} flex items-center px-6 h-[44px] hair-b cursor-pointer transition-colors`}
     >
       <div className="flex-1 min-w-0 flex items-center gap-2.5">
-        <TypeIcon type={document.type_fichier} />
+        <SelectableIcon checked={checked} onToggle={onToggle}>
+          <TypeIcon type={document.type_fichier} />
+        </SelectableIcon>
         <div className="min-w-0 flex-1">
           {renaming ? (
             <input
