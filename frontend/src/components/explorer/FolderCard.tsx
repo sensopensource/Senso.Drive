@@ -1,21 +1,26 @@
-import { useState } from "react"
+import { useState, type KeyboardEvent } from "react"
 import type { Categorie } from "../../types"
 import { setDndPayload, getDndPayload, isDndDragging, type DndPayload } from "../../lib/dnd"
+import ItemMenu from "../ItemMenu"
+import type { FolderActions } from "./actions"
 
 type Props = {
   categorie: Categorie
   nbSousDossiers: number
   onOpen: () => void
+  actions: FolderActions
   onDrop?: (payload: DndPayload, targetId: number) => void
 }
 
-// Carte dossier (vue grille) : icône, nom, méta (count + sous-dossiers ou badge privé), drag & drop.
-function FolderCard({ categorie, nbSousDossiers, onOpen, onDrop }: Props) {
+// Carte dossier (vue grille) : icône, nom, méta (count + sous-dossiers ou badge privé), kebab, drag & drop.
+function FolderCard({ categorie, nbSousDossiers, onOpen, actions, onDrop }: Props) {
   const [dragOver, setDragOver] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [nomEdit, setNomEdit] = useState(categorie.nom)
   const priv = categorie.privee
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!isDndDragging(e)) return
+    if (!isDndDragging(e) || renaming) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     if (!dragOver) setDragOver(true)
@@ -30,10 +35,21 @@ function FolderCard({ categorie, nbSousDossiers, onOpen, onDrop }: Props) {
     onDrop(payload, categorie.id)
   }
 
+  const startRename = () => { setNomEdit(categorie.nom); setRenaming(true) }
+  const submitRename = () => {
+    const v = nomEdit.trim()
+    setRenaming(false)
+    if (v && v !== categorie.nom) actions.rename(categorie.id, v)
+  }
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') submitRename()
+    if (e.key === 'Escape') setRenaming(false)
+  }
+
   return (
     <div
-      onClick={onOpen}
-      draggable
+      onClick={renaming ? undefined : onOpen}
+      draggable={!renaming}
       onDragStart={(e) => setDndPayload(e, { kind: 'folder', id: categorie.id })}
       onDragOver={handleDragOver}
       onDragLeave={() => setDragOver(false)}
@@ -42,12 +58,34 @@ function FolderCard({ categorie, nbSousDossiers, onOpen, onDrop }: Props) {
         dragOver ? 'border border-dashed border-type-ai bg-type-ai/[0.06]' : 'hair hover:bg-elev hover:!border-line2'
       }`}
     >
-      <div className="mb-[18px]">
+      <div className="flex items-start justify-between mb-[18px]">
         <span className="material-symbols-outlined text-[30px]" style={{ color: priv ? 'var(--mute)' : 'var(--type-md)' }}>
           {priv ? 'folder_special' : 'folder'}
         </span>
+        <ItemMenu
+          className="opacity-0 group-hover:opacity-100"
+          actions={[
+            { label: 'Renommer', icon: 'drive_file_rename_outline', onClick: startRename },
+            { label: priv ? 'Rendre public' : 'Rendre privé', icon: priv ? 'lock_open' : 'lock', onClick: () => actions.togglePrivee(categorie) },
+            { label: 'Supprimer', icon: 'delete', danger: true, onClick: () => actions.remove(categorie.id) },
+          ]}
+        />
       </div>
-      <div className="font-display font-semibold text-[14px] text-bright truncate">{categorie.nom}</div>
+
+      {renaming ? (
+        <input
+          autoFocus
+          value={nomEdit}
+          onChange={(e) => setNomEdit(e.target.value)}
+          onKeyDown={onKey}
+          onBlur={submitRename}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full bg-ink hair !border-type-ai text-bright text-[14px] font-display font-semibold px-2 py-1 outline-none"
+        />
+      ) : (
+        <div className="font-display font-semibold text-[14px] text-bright truncate">{categorie.nom}</div>
+      )}
+
       <div className="text-[11.5px] text-mute mt-0.5 flex items-center gap-1.5 min-w-0">
         {priv ? (
           <>
@@ -63,6 +101,7 @@ function FolderCard({ categorie, nbSousDossiers, onOpen, onDrop }: Props) {
           </span>
         )}
       </div>
+
       {dragOver && (
         <div className="absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-wider text-type-ai bg-type-ai/[0.04] pointer-events-none">
           Déposer ici

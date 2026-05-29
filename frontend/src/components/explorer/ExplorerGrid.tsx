@@ -3,6 +3,7 @@ import type { DndPayload } from "../../lib/dnd"
 import { getDirectChildren } from "../../lib/categoriesTree"
 import FolderCard from "./FolderCard"
 import DocCard from "./DocCard"
+import type { DocActions, FolderActions } from "./actions"
 
 type Props = {
   subFolders: Categorie[]
@@ -13,13 +14,15 @@ type Props = {
   onOpenFolder: (id: number) => void
   onSelectDoc: (id: number) => void
   onDropOnFolder: (payload: DndPayload, targetId: number) => void
+  docActions: DocActions
+  folderActions: FolderActions
 }
 
 const GRID = "grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3.5"
 const GRP = "font-mono text-[10px] uppercase tracking-[0.12em] text-mute mb-3.5"
 
 // Vue grille de l'explorateur : dossiers en cartes puis documents en cartes.
-function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode, onOpenFolder, onSelectDoc, onDropOnFolder }: Props) {
+function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode, onOpenFolder, onSelectDoc, onDropOnFolder, docActions, folderActions }: Props) {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5">
       {!isSearchMode && subFolders.length > 0 && (
@@ -33,6 +36,7 @@ function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode,
                 nbSousDossiers={getDirectChildren(categories, f.id).length}
                 onOpen={() => onOpenFolder(f.id)}
                 onDrop={onDropOnFolder}
+                actions={folderActions}
               />
             ))}
           </div>
@@ -44,7 +48,7 @@ function ExplorerGrid({ subFolders, items, categories, selectedId, isSearchMode,
           <div className={GRP}>Documents · {items.length}</div>
           <div className={GRID}>
             {items.map(d => (
-              <DocCard key={d.id} document={d} selected={selectedId === d.id} onOpen={() => onSelectDoc(d.id)} />
+              <DocCard key={d.id} document={d} selected={selectedId === d.id} onOpen={() => onSelectDoc(d.id)} actions={docActions} />
             ))}
           </div>
         </>

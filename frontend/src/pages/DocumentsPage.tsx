@@ -229,6 +229,8 @@ function DocumentsPage() {
                   onOpenFolder={handleOpenFolder}
                   onSelectDoc={setSelectedId}
                   onDropOnFolder={handleDropOnFolder}
+                  docActions={docActions}
+                  folderActions={folderActions}
                 />
               ) : (
                 <DocumentsTable
