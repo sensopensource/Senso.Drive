@@ -48,6 +48,7 @@
   --type-txt:   #6ac98a;
   --type-md:    #c9a76a;
   --type-ai:    #a89cd6;
+  --type-img:   #c98ac9;
 
   --danger:   #c0392b;
   --success:  #1e7a4a;
@@ -111,6 +112,7 @@
   --color-type-txt:  #6ac98a;
   --color-type-md:   #c9a76a;
   --color-type-ai:   #a89cd6;
+  --color-type-img:  #c98ac9;
 
   /* Polices */
   --font-display: "Space Grotesk", "Helvetica Neue", sans-serif;
@@ -180,6 +182,7 @@ body {
 .type-docx::before { background: var(--type-docx); }
 .type-txt::before  { background: var(--type-txt); }
 .type-md::before   { background: var(--type-md); }
+.type-img::before  { background: var(--type-img); }
 
 .row-selected { background: #1a1a1e !important; }
 .row-selected::before { background: var(--bright) !important; width: 2px; }
