@@ -40,7 +40,12 @@ function DocumentsTable({
       {/* Rows */}
       <div className="flex-1 overflow-y-auto">
 
-        {/* Sous-dossiers en tete */}
+        {/* Groupe Dossiers */}
+        {!isSearchMode && subFolders.length > 0 && (
+          <div className="px-6 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute bg-ink/40 hair-b">
+            Dossiers · {subFolders.length}
+          </div>
+        )}
         {subFolders.map((folder, idx) => (
           <CategorieRow
             key={`folder-${folder.id}`}
@@ -51,7 +56,12 @@ function DocumentsTable({
           />
         ))}
 
-        {/* Documents */}
+        {/* Groupe Documents */}
+        {items.length > 0 && (
+          <div className="px-6 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute bg-ink/40 hair-b">
+            Documents · {items.length}
+          </div>
+        )}
         {items.map((doc, idx) => (
           <DocumentRow
             key={doc.id}
