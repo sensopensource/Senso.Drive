@@ -45,6 +45,8 @@ export type Document = {
     type_fichier: string | null  // "pdf" | "docx" | "txt" | "md" | null
     id_categorie: number | null
     tags: Tag[]
+    taille_octets: number | null  // de la derniere version
+    etat: string | null           // de la derniere version : a_analyser / pret / echec
 }
 
 export type Version = {

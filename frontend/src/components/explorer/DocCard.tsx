@@ -1,6 +1,6 @@
 import type { Document } from "../../types"
 import { setDndPayload } from "../../lib/dnd"
-import { formatDateCourte } from "../../lib/format"
+import { formatDateCourte, formatOctets } from "../../lib/format"
 import TypeIcon from "../TypeIcon"
 
 type Props = {
@@ -27,7 +27,15 @@ function DocCard({ document, selected, onOpen }: Props) {
         <span className="material-symbols-outlined text-[16px] text-mute opacity-0 group-hover:opacity-100 cursor-grab">drag_indicator</span>
       </div>
       <div className="text-[13px] text-bright truncate">{document.titre}</div>
-      <div className="font-mono text-[10.5px] text-mute mt-1">{formatDateCourte(document.date_creation)}</div>
+      {document.etat === 'a_analyser' ? (
+        <div className="font-mono text-[10.5px] text-type-img mt-1">Slavy analyse l'image…</div>
+      ) : document.etat === 'echec' ? (
+        <div className="font-mono text-[10.5px] text-danger mt-1">Analyse échouée</div>
+      ) : (
+        <div className="font-mono text-[10.5px] text-mute mt-1">
+          {formatDateCourte(document.date_creation)}{document.taille_octets != null ? ` · ${formatOctets(document.taille_octets)}` : ''}
+        </div>
+      )}
     </div>
   )
 }
