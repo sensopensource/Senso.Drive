@@ -500,7 +500,7 @@ function AppSidebar() {
 
             {/* Sous-pages admin : lien reel si `to`, sinon placeholder grise (a venir) */}
             {[
-              { label: 'Utilisateurs',   icon: 'group',           to: null as string | null },
+              { label: 'Utilisateurs',   icon: 'group',           to: '/admin/users' as string | null },
               { label: 'Logs',           icon: 'terminal',        to: null as string | null },
               { label: 'Tokens & coûts', icon: 'monetization_on', to: '/admin/tokens' as string | null },
               { label: 'Stockage',       icon: 'database',        to: null as string | null },

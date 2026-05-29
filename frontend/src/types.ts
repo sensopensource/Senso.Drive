@@ -133,6 +133,20 @@ export type UtilisateurAdminRow = {
     dernier_login: string | null
 }
 
+export type UtilisateurAdminDetail = UtilisateurAdminRow & {
+    stockage_octets: number
+    quota_octets: number
+    cout_estime_30j: number
+    suggestions_en_attente: number
+    suggestions_validees: number
+    suggestions_refusees: number
+    docs_par_type: Record<string, number>
+    nb_documents_corbeille: number
+    nb_recherches: number
+    nb_categories: number
+    nb_tags: number
+}
+
 export type LogRead = {
     id: number
     id_utilisateur: number | null

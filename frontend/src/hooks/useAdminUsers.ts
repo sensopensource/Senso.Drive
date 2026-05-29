@@ -1,6 +1,6 @@
 import { apiFetch } from "../api"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import type { UtilisateurAdminRow } from "../types"
+import type { UtilisateurAdminRow, UtilisateurAdminDetail } from "../types"
 
 export function useAdminUsers() {
   const { data, isLoading } = useQuery<UtilisateurAdminRow[]>({
@@ -14,6 +14,23 @@ export function useAdminUsers() {
 
   return {
     users: data ?? [],
+    isLoading,
+  }
+}
+
+export function useAdminUserDetail(id: number | null) {
+  const { data, isLoading } = useQuery<UtilisateurAdminDetail>({
+    queryKey: ['admin', 'users', id],
+    enabled: id != null,
+    queryFn: async () => {
+      const response = await apiFetch(`/admin/users/${id}`)
+      if (!response.ok) throw new Error("Erreur chargement détail utilisateur")
+      return response.json()
+    },
+  })
+
+  return {
+    detail: data ?? null,
     isLoading,
   }
 }
