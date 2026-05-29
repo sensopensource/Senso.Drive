@@ -14,6 +14,10 @@ import UploadModal from "../components/UploadModal"
 import NewCategorieModal from "../components/NewCategorieModal"
 import DocumentInlinePanel from "../components/DocumentInlinePanel"
 import SearchFiltersPanel from "../components/SearchFilters"
+import { useDeleteDocument } from "../hooks/useDeleteDocument"
+import { useDeleteCategorie } from "../hooks/useDeleteCategorie"
+import { telechargerDocument } from "../lib/download"
+import type { DocActions, FolderActions } from "../components/explorer/actions"
 
 const SIZE = 20
 type Vue = 'liste' | 'grille'
@@ -52,6 +56,8 @@ function DocumentsPage() {
 
   const { categories, updateCategorie } = useCategories()
   const { updateDocument } = useUpdateDocument()
+  const { deleteDocument } = useDeleteDocument()
+  const { deleteCategorie } = useDeleteCategorie()
   const { documents, total, isLoading: isLoadingAll, error: errorAll } = useDocuments(page, SIZE, filterCategorie)
   const { results, isLoading: isLoadingSearch, error: errorSearch } = useSearchDocuments(searchQuery, searchFilters)
   const items = isSearchMode ? results : documents
@@ -112,6 +118,17 @@ function DocumentsPage() {
     const next = new URLSearchParams(searchParams)
     next.delete('cat')
     setSearchParams(next)
+  }
+
+  const docActions: DocActions = {
+    rename: (id, titre) => updateDocument({ id, titre, successMessage: `Renommé en « ${titre} »` }),
+    remove: (id) => deleteDocument(id),
+    download: (doc) => telechargerDocument(doc.id, doc.type_fichier ? `${doc.titre}.${doc.type_fichier}` : doc.titre),
+  }
+  const folderActions: FolderActions = {
+    rename: (id, nom) => updateCategorie({ id, nom }),
+    togglePrivee: (cat) => updateCategorie({ id: cat.id, privee: !cat.privee }),
+    remove: (id) => deleteCategorie(id),
   }
 
   const dossierCourant = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null
@@ -222,6 +239,8 @@ function DocumentsPage() {
                   subFolders={subFolders}
                   onOpenFolder={handleOpenFolder}
                   onDropOnFolder={handleDropOnFolder}
+                  docActions={docActions}
+                  folderActions={folderActions}
                 />
               )
             )}

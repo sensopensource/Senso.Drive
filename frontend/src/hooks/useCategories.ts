@@ -4,7 +4,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query"
 import { useToast } from "../contexts/ToastContext"
 
 type CreatePayload = { nom: string; id_parent?: number | null }
-type PatchPayload = { id: number; nom?: string; id_parent?: number | null; updateParent?: boolean }
+type PatchPayload = { id: number; nom?: string; id_parent?: number | null; updateParent?: boolean; privee?: boolean }
 
 export function useCategories() {
   const queryClient = useQueryClient()
@@ -42,12 +42,13 @@ export function useCategories() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, nom, id_parent, updateParent }: PatchPayload) => {
+    mutationFn: async ({ id, nom, id_parent, updateParent, privee }: PatchPayload) => {
       // Pour deplacer a la racine, on doit envoyer explicitement id_parent: null,
       // sinon le back ne touche pas au champ.
       const body: Record<string, unknown> = {}
       if (nom !== undefined) body.nom = nom
       if (updateParent) body.id_parent = id_parent ?? null
+      if (privee !== undefined) body.privee = privee
 
       const response = await apiFetch(`/categories/${id}`, {
         method: 'PATCH',
@@ -78,7 +79,7 @@ export function useCategories() {
     },
     updateCategorie: (cat: Categorie | PatchPayload) => {
       // Compat : ancien usage updateCategorie(categorie) renomme juste
-      if ('updateParent' in cat) {
+      if ('updateParent' in cat || 'privee' in cat) {
         updateMutation.mutate(cat as PatchPayload)
       } else {
         updateMutation.mutate({ id: cat.id, nom: cat.nom })
