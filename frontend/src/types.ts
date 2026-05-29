@@ -21,6 +21,7 @@ export type Categorie = {
     nom: string
     id_parent: number | null
     count: number
+    privee: boolean
 }
 
 // Forme de l'arbre construite cote front (a partir de la liste plate)
