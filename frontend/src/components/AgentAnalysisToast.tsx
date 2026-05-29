@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
 import { useAgent } from "../contexts/AgentContext"
+import { LABELS } from "../lib/labels"
 
 const STEPS = [
   { at: 0,  msg: "Lecture des documents…" },
   { at: 25, msg: "Construction du contexte…" },
-  { at: 50, msg: "L'agent réfléchit…" },
+  { at: 50, msg: `${LABELS.slavy.nom} réfléchit…` },
   { at: 80, msg: "Filtrage des suggestions…" },
 ]
 
@@ -44,7 +45,7 @@ function AgentAnalysisToast() {
     <div className="toast">
       <div className="toast-head">
         <span className="toast-icon"></span>
-        <span className="toast-title">L'agent analyse ta bibliothèque</span>
+        <span className="toast-title">{LABELS.slavy.nom} analyse votre bibliothèque</span>
         <button
           type="button"
           onClick={cancelAnalysis}

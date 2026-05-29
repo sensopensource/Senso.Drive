@@ -1,6 +1,7 @@
 import Widget from "./Widget"
 import { useAdminTokens } from "../../hooks/useAdminTokens"
 import { formatNombre } from "../../lib/format"
+import { LABELS } from "../../lib/labels"
 import type { TokensPoint } from "../../types"
 
 type Props = {
@@ -94,7 +95,7 @@ function TokensContent({ tokens }: { tokens: NonNullable<ReturnType<typeof useAd
           <div className="font-display text-[16px] font-medium tabular-nums">{formatNombre(parSource('resume'))}</div>
         </div>
         <div className="bg-panel px-3 py-2.5">
-          <div className="section-label mb-1">Agent IA</div>
+          <div className="section-label mb-1">{LABELS.slavy.nom}</div>
           <div className="font-display text-[16px] font-medium tabular-nums">{formatNombre(parSource('suggestion'))}</div>
         </div>
       </div>

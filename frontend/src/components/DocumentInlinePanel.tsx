@@ -11,6 +11,7 @@ import { useAddVersion } from "../hooks/useAddVersion"
 import { useVersions } from "../hooks/useVersions"
 import  ReactMarkdown from 'react-markdown'
 import { apiFetch } from "../api"
+import { LABELS } from "../lib/labels"
 
 type Props = {
   documentId: number
@@ -494,12 +495,12 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
               <div className="section-label mb-3">Informations</div>
               <dl className="space-y-2.5 text-[12px]">
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-mute">Catégorie</dt>
+                  <dt className="text-mute">{LABELS.dossier.singulier}</dt>
                   <dd className="relative" ref={categoriePickerRef}>
                     <button
                       onClick={() => setShowCategoriePicker(v => !v)}
                       className="flex items-center gap-1.5 text-bright hover:text-bright px-1.5 py-0.5 hair border-transparent hover:border-line2 transition-colors"
-                      title="Changer de catégorie"
+                      title="Changer de dossier"
                     >
                       {categorieIdx >= 0 && (
                         <span className={`type-dot ${TYPE_DOTS[categorieIdx % TYPE_DOTS.length]}`}></span>
@@ -511,7 +512,7 @@ function DocumentInlinePanel({ documentId, onClose }: Props) {
                     {showCategoriePicker && (
                       <div className="absolute top-full right-0 mt-1 min-w-[180px] bg-elev hair z-50">
                         {categories.length === 0 && (
-                          <div className="px-3 py-2 text-[11.5px] text-mute italic">Aucune catégorie</div>
+                          <div className="px-3 py-2 text-[11.5px] text-mute italic">Aucun dossier</div>
                         )}
                         {categories.map((cat, idx) => {
                           const isCurrent = cat.id === document.id_categorie

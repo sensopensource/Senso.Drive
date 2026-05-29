@@ -13,6 +13,7 @@ import { useAgent } from "../contexts/AgentContext"
 import { useAuth } from "../contexts/AuthContext"
 import { useStockage } from "../hooks/useStockage"
 import { formatOctets } from "../lib/format"
+import { LABELS } from "../lib/labels"
 
 const CAT_COLORS = ["var(--type-pdf)", "var(--type-docx)", "var(--type-txt)", "var(--type-md)"]
 
@@ -355,7 +356,7 @@ function AppSidebar() {
         {/* Section Agent IA */}
         <div className="px-3 py-1.5">
           <div className="section-label px-2 mb-1 flex items-center justify-between">
-            <span className="text-type-ai">Agent IA</span>
+            <span className="text-type-ai">{LABELS.slavy.nom}</span>
             <span className="material-symbols-outlined text-[11px] text-type-ai">auto_awesome</span>
           </div>
 

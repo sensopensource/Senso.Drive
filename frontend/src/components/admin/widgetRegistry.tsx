@@ -5,6 +5,7 @@ import DocTypesWidget from "./DocTypesWidget"
 import SuggestionsWidget from "./SuggestionsWidget"
 import LogsWidget from "./LogsWidget"
 import UsersWidget from "./UsersWidget"
+import { LABELS } from "../../lib/labels"
 
 export type WidgetKey = 'tokens' | 'topUsers' | 'docTypes' | 'suggestions' | 'logs' | 'users'
 
@@ -38,7 +39,7 @@ export const REGISTRE: Record<WidgetKey, WidgetDef> = {
     render: ({ jours }) => <DocTypesWidget jours={jours} />,
   },
   suggestions: {
-    label: 'Suggestions agent',
+    label: `Suggestions ${LABELS.slavy.nom}`,
     defaultSpan: 6, minSpan: 4,
     render: ({ jours, rangeLabel }) => <SuggestionsWidget jours={jours} rangeLabel={rangeLabel} />,
   },

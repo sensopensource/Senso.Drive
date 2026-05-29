@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useAuteurs } from "../hooks/useAuteurs"
 import { useCategories } from "../hooks/useCategories"
 import { useTags } from "../hooks/useTags"
+import { LABELS } from "../lib/labels"
 
 type Props = {
   searchParams: URLSearchParams
@@ -114,9 +115,9 @@ function SearchFilters({ searchParams, setSearchParams }: Props) {
             </select>
           </div>
 
-          {/* Catégorie */}
+          {/* Dossier */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10.5px] font-mono text-mute uppercase tracking-wider">Catégorie</label>
+            <label className="text-[10.5px] font-mono text-mute uppercase tracking-wider">{LABELS.dossier.singulier}</label>
             <select
               value={idCategorie}
               onChange={e => updateParam('cat', e.target.value)}

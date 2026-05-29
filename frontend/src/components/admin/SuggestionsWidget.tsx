@@ -1,5 +1,6 @@
 import Widget from "./Widget"
 import { useOverview } from "../../hooks/useOverview"
+import { LABELS } from "../../lib/labels"
 
 type Props = {
   jours: number | null
@@ -14,7 +15,7 @@ function SuggestionsWidget({ jours, rangeLabel, className }: Props) {
 
   return (
     <Widget
-      title={`Suggestions agent — ${rangeLabel}`}
+      title={`Suggestions ${LABELS.slavy.nom} — ${rangeLabel}`}
       icon="auto_awesome" iconClass="text-type-ai"
       counter={overview ? `${overview.suggestions_total} émises` : undefined}
       className={className}

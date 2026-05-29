@@ -1,6 +1,7 @@
 import type { Document, Categorie } from "../types"
 import DocumentRow from "./DocumentRow"
 import CategorieRow from "./CategorieRow"
+import { LABELS } from "../lib/labels"
 
 type Props = {
   items: Document[]
@@ -32,7 +33,7 @@ function DocumentsTable({
       <div className="flex items-center px-6 h-9 hair-b bg-ink/60 shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
         <div className="w-6"></div>
         <div className="flex-1 min-w-0">Nom</div>
-        <div className="w-[140px] hidden lg:block">Catégorie</div>
+        <div className="w-[140px] hidden lg:block">{LABELS.dossier.singulier}</div>
         <div className="w-[130px] hidden md:block">Modifié</div>
         <div className="w-[60px] text-right">Type</div>
       </div>

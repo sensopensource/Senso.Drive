@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useAgent } from "../contexts/AgentContext"
 import { TYPE_LABEL, buildTitle } from "../lib/suggestions"
+import { LABELS } from "../lib/labels"
 
 function SuggestionsModal() {
   const {
@@ -60,7 +61,7 @@ function SuggestionsModal() {
       <div className="modal-sugg">
 
         <div className="head">
-          <span className="section-label">Suggestions de l'agent</span>
+          <span className="section-label">Suggestions de {LABELS.slavy.nom}</span>
           <span className="counter">
             {tourSuggestions.length > 0 ? `${currentIdx + 1} / ${tourSuggestions.length}` : '—'}
           </span>
@@ -85,7 +86,7 @@ function SuggestionsModal() {
             <div className="end-card">
               <span className="material-symbols-outlined end-icon">task_alt</span>
               <h2>Toutes les suggestions ont été traitées</h2>
-              <p>Tu peux relancer une analyse quand tu veux depuis la sidebar.</p>
+              <p>Vous pouvez relancer une analyse quand vous voulez depuis la barre latérale.</p>
               <button type="button" onClick={closeSuggestions} className="btn-primary">
                 Fermer
               </button>
@@ -139,9 +140,9 @@ function SuggestionsModal() {
               {refusing && (
                 <div className="refuse-form">
                   <div className="refuse-label">Pourquoi refuser ?</div>
-                  <h3>Aide l'agent à mieux comprendre</h3>
+                  <h3>Aide {LABELS.slavy.nom} à mieux comprendre</h3>
                   <p className="refuse-intro">
-                    Ton retour reste optionnel. S'il est rempli, il sera utilisé plus tard pour affiner les prochaines suggestions.
+                    Votre retour reste optionnel. S'il est rempli, il servira plus tard à affiner les prochaines suggestions.
                   </p>
                   <textarea
                     value={raison}

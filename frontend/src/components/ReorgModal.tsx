@@ -10,7 +10,7 @@ function buildDesc(s: Suggestion): string {
     const nom = s.payload.categorie_cible_nom
     const nouvelle = s.payload.categorie_cible_id == null
     if (nouvelle && nom) {
-      return `Création de la catégorie "${nom}" et déplacement de ${nb} document${nb > 1 ? 's' : ''}.`
+      return `Création du dossier "${nom}" et déplacement de ${nb} document${nb > 1 ? 's' : ''}.`
     }
     if (nom) {
       return `Déplacement de ${nb} document${nb > 1 ? 's' : ''} vers "${nom}".`
