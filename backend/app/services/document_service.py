@@ -43,6 +43,8 @@ def _to_document_read(document: Document, version: Version | None) -> DocumentRe
         type_fichier=version.type_fichier if version else None,
         id_categorie=document.id_categorie,
         tags=document.tags if hasattr(document, "tags") else [],
+        taille_octets=version.taille_octets if version else None,
+        etat=version.etat if version else None,
     )
 
 

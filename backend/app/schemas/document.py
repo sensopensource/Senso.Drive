@@ -21,6 +21,8 @@ class DocumentRead(BaseModel):
     type_fichier: str | None = None
     id_categorie: int | None = None
     tags: list[TagRead] = []
+    taille_octets: int | None = None   # de la derniere version
+    etat: str | None = None            # de la derniere version : a_analyser / pret / echec
 
 class DocumentPatch(BaseModel):
 
