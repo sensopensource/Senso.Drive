@@ -9,6 +9,7 @@ import CorbeillePage from "./pages/CorbeillePage"
 import AdminDashboardPage from "./pages/AdminDashboardPage"
 import AdminTokensPage from "./pages/AdminTokensPage"
 import AdminUsersPage from "./pages/AdminUsersPage"
+import AdminLogsPage from "./pages/AdminLogsPage"
 import AdminRoute from "./components/AdminRoute"
 import ToastContainer from "./components/ToastContainer"
 import { AuthProvider } from "./contexts/AuthContext"
@@ -59,6 +60,11 @@ function App() {
               <Route path="/admin/users" element={
                 <AdminRoute>
                   <AdminUsersPage />
+                </AdminRoute>
+              } />
+              <Route path="/admin/logs" element={
+                <AdminRoute>
+                  <AdminLogsPage />
                 </AdminRoute>
               } />
             </Routes>

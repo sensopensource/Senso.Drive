@@ -211,10 +211,9 @@ function DetailContenu({ detail, onClose, confirmSuppr, setConfirmSuppr, supprim
         </Section>
 
         <Section label="Activité · 30 jours">
-          <div className="grid grid-cols-3 gap-px bg-line hair">
+          <div className="grid grid-cols-2 gap-px bg-line hair">
             <Cell label="Tokens 30j" valeur={formatNombre(detail.tokens_30j)} />
             <Cell label="Coût est. 30j" valeur={formatEuro(detail.cout_estime_30j)} valeurClass="text-warn text-[16px]" />
-            <Cell label="Recherches" valeur={String(detail.nb_recherches)} />
           </div>
         </Section>
 
