@@ -1,51 +1,44 @@
 import type { Document, Categorie } from "../types"
 import DocumentRow from "./DocumentRow"
 import CategorieRow from "./CategorieRow"
-import { LABELS } from "../lib/labels"
 
 type Props = {
   items: Document[]
   selectedId: number | null
   onSelect: (id: number) => void
-  categories: Categorie[]
   isSearchMode: boolean
   subFolders?: Categorie[]
   onOpenFolder?: (id: number) => void
   onDropOnFolder?: (payload: { kind: 'doc' | 'folder'; id: number }, targetCategorieId: number) => void
 }
 
+const GRP = "px-6 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute bg-ink/40 hair-b"
+
 function DocumentsTable({
   items,
   selectedId,
   onSelect,
-  categories,
   isSearchMode,
   subFolders = [],
   onOpenFolder,
   onDropOnFolder,
 }: Props) {
-  const categorieNomById = new Map(categories.map(c => [c.id, c.nom]))
-
   return (
     <section className="flex-1 overflow-hidden flex flex-col min-w-0">
 
-      {/* Column headers */}
+      {/* En-tete colonnes */}
       <div className="flex items-center px-6 h-9 hair-b bg-ink/60 shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
-        <div className="w-6"></div>
-        <div className="flex-1 min-w-0">Nom</div>
-        <div className="w-[140px] hidden lg:block">{LABELS.dossier.singulier}</div>
+        <div className="flex-1 min-w-0 pl-[28px]">Nom</div>
         <div className="w-[130px] hidden md:block">Modifié</div>
-        <div className="w-[60px] text-right">Type</div>
+        <div className="w-[90px] text-right">Taille</div>
       </div>
 
-      {/* Rows */}
+      {/* Lignes */}
       <div className="flex-1 overflow-y-auto">
 
         {/* Groupe Dossiers */}
         {!isSearchMode && subFolders.length > 0 && (
-          <div className="px-6 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute bg-ink/40 hair-b">
-            Dossiers · {subFolders.length}
-          </div>
+          <div className={GRP}>Dossiers · {subFolders.length}</div>
         )}
         {subFolders.map((folder, idx) => (
           <CategorieRow
@@ -59,9 +52,7 @@ function DocumentsTable({
 
         {/* Groupe Documents */}
         {items.length > 0 && (
-          <div className="px-6 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute bg-ink/40 hair-b">
-            Documents · {items.length}
-          </div>
+          <div className={GRP}>Documents · {items.length}</div>
         )}
         {items.map((doc, idx) => (
           <DocumentRow
@@ -70,7 +61,6 @@ function DocumentsTable({
             index={subFolders.length + idx}
             isSelected={selectedId === doc.id}
             onClick={() => onSelect(doc.id)}
-            categorieNom={doc.id_categorie ? categorieNomById.get(doc.id_categorie) : null}
             extrait={isSearchMode ? (doc as Document & { extrait?: string | null }).extrait : null}
           />
         ))}

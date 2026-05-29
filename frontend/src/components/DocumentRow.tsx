@@ -1,50 +1,31 @@
 import type { Document } from "../types"
 import { setDndPayload } from "../lib/dnd"
+import { formatOctets, formatDateCourte } from "../lib/format"
+import TypeIcon from "./TypeIcon"
 
 type Props = {
   document: Document
   index: number
   isSelected: boolean
   onClick: () => void
-  categorieNom?: string | null
   extrait?: string | null
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  pdf:  "picture_as_pdf",
-  docx: "description",
-  txt:  "article",
-  md:   "code_blocks",
-}
-
-const TYPE_CLASS: Record<string, string> = {
-  pdf:  "type-pdf",
-  docx: "type-docx",
-  txt:  "type-txt",
-  md:   "type-md",
-}
-
-function DocumentRow({ document, index, isSelected, onClick, categorieNom, extrait }: Props) {
-  const icon = document.type_fichier ? TYPE_ICONS[document.type_fichier] ?? "insert_drive_file" : "insert_drive_file"
-  const typeClass = document.type_fichier ? TYPE_CLASS[document.type_fichier] ?? "" : ""
+function DocumentRow({ document, index, isSelected, onClick, extrait }: Props) {
   const baseRowClass = index % 2 === 0 ? "row" : "row-alt"
   const selectedClass = isSelected ? "row-selected" : ""
-
-  const dateFormatted = new Date(document.date_creation)
-    .toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })
-  const timeFormatted = new Date(document.date_creation)
-    .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+  const enAnalyse = document.etat === 'a_analyser'
+  const echec = document.etat === 'echec'
 
   return (
     <div
       onClick={onClick}
       draggable
       onDragStart={(e) => setDndPayload(e, { kind: 'doc', id: document.id })}
-      className={`${baseRowClass} ${typeClass} ${selectedClass} flex items-center px-6 h-[44px] hair-b cursor-pointer transition-colors`}
+      className={`${baseRowClass} ${selectedClass} flex items-center px-6 h-[44px] hair-b cursor-pointer transition-colors`}
     >
-      <div className="w-6"></div>
       <div className="flex-1 min-w-0 flex items-center gap-2.5">
-        <span className="material-symbols-outlined text-[18px] text-soft">{icon}</span>
+        <TypeIcon type={document.type_fichier} />
         <div className="min-w-0 flex-1">
           <div className="text-[13px] text-bright truncate">{document.titre}</div>
           {extrait && (
@@ -55,18 +36,17 @@ function DocumentRow({ document, index, isSelected, onClick, categorieNom, extra
           )}
         </div>
       </div>
-      <div className="w-[140px] hidden lg:flex items-center">
-        <span className="text-[11.5px] text-soft truncate">{categorieNom ?? '—'}</span>
-      </div>
       <div className="w-[130px] hidden md:block font-mono text-[11px] text-mute">
-        {dateFormatted}, {timeFormatted}
-      </div>
-      <div className="w-[60px] flex justify-end">
-        {document.type_fichier && (
-          <span className="font-mono text-[10px] uppercase tracking-wider text-mute">
-            {document.type_fichier}
-          </span>
+        {enAnalyse ? (
+          <span className="text-type-img">analyse en cours</span>
+        ) : echec ? (
+          <span className="text-danger">échec d'analyse</span>
+        ) : (
+          formatDateCourte(document.date_creation)
         )}
+      </div>
+      <div className="w-[90px] text-right font-mono text-[11px] text-mute">
+        {document.taille_octets != null ? formatOctets(document.taille_octets) : '—'}
       </div>
     </div>
   )

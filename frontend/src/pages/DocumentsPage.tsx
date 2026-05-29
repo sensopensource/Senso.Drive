@@ -218,7 +218,6 @@ function DocumentsPage() {
                   items={items}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
-                  categories={categories}
                   isSearchMode={isSearchMode}
                   subFolders={subFolders}
                   onOpenFolder={handleOpenFolder}
