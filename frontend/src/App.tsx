@@ -7,6 +7,7 @@ import CategoriesPage from "./pages/CategoriesPage"
 import DocumentsPage from "./pages/DocumentsPage"
 import CorbeillePage from "./pages/CorbeillePage"
 import AdminDashboardPage from "./pages/AdminDashboardPage"
+import AdminTokensPage from "./pages/AdminTokensPage"
 import AdminRoute from "./components/AdminRoute"
 import ToastContainer from "./components/ToastContainer"
 import { AuthProvider } from "./contexts/AuthContext"
@@ -47,6 +48,11 @@ function App() {
               <Route path="/admin" element={
                 <AdminRoute>
                   <AdminDashboardPage />
+                </AdminRoute>
+              } />
+              <Route path="/admin/tokens" element={
+                <AdminRoute>
+                  <AdminTokensPage />
                 </AdminRoute>
               } />
             </Routes>

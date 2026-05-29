@@ -498,17 +498,44 @@ function AppSidebar() {
               )}
             </NavLink>
 
-            {/* Sous-pages a venir (etape ulterieure) */}
-            {['Utilisateurs', 'Logs', 'Tokens & coûts', 'Stockage', 'Santé LLM'].map(label => (
-              <button
-                key={label}
-                type="button"
-                disabled
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-[12.5px] text-soft opacity-40 cursor-not-allowed"
-              >
-                <span className="material-symbols-outlined text-[15px] text-mute">lock</span>
-                <span className="flex-1 text-left">{label}</span>
-              </button>
+            {/* Sous-pages admin : lien reel si `to`, sinon placeholder grise (a venir) */}
+            {[
+              { label: 'Utilisateurs',   icon: 'group',           to: null as string | null },
+              { label: 'Logs',           icon: 'terminal',        to: null as string | null },
+              { label: 'Tokens & coûts', icon: 'monetization_on', to: '/admin/tokens' as string | null },
+              { label: 'Stockage',       icon: 'database',        to: null as string | null },
+              { label: 'Santé LLM',      icon: 'monitor_heart',   to: null as string | null },
+            ].map(lien => (
+              lien.to ? (
+                <NavLink
+                  key={lien.label}
+                  to={lien.to}
+                  className={({ isActive }) =>
+                    `relative flex items-center gap-2 px-2 py-1.5 text-[12.5px] transition-colors ${
+                      isActive
+                        ? 'text-bright bg-elev before:content-[""] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-3.5 before:bg-type-md'
+                        : 'text-soft hover:text-bright hover:bg-elev'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span className={`material-symbols-outlined text-[15px] ${isActive ? 'text-type-md' : 'text-mute'}`}>{lien.icon}</span>
+                      <span className="flex-1">{lien.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ) : (
+                <button
+                  key={lien.label}
+                  type="button"
+                  disabled
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-[12.5px] text-soft opacity-40 cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[15px] text-mute">lock</span>
+                  <span className="flex-1 text-left">{lien.label}</span>
+                </button>
+              )
             ))}
           </div>
         )}
