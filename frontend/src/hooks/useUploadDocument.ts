@@ -8,6 +8,7 @@ type UploadParams = {
   titre?: string
   auteur?: string
   id_categorie?: number | null
+  silencieux?: boolean   // true = l'appelant gère ses propres toasts (import multi)
 }
 
 export function useUploadDocument() {
@@ -36,18 +37,19 @@ export function useUploadDocument() {
 
       return response.json() as Promise<Document>
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      showToast(`Document "${data.titre}" uploadé`, 'success')
+      if (!variables.silencieux) showToast(`Document "${data.titre}" uploadé`, 'success')
     },
-    onError: (error) => {
-      showToast(error.message, 'error')
+    onError: (error, variables) => {
+      if (!variables.silencieux) showToast(error.message, 'error')
     },
   })
 
   return {
     uploadDocument: mutation.mutate,
+    uploadDocumentAsync: mutation.mutateAsync,
     isPending: mutation.isPending,
     error: mutation.error,
   }
