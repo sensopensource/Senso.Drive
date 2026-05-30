@@ -11,7 +11,7 @@ from app.models.versions import Version
 from app.models.categories import Categorie
 from app.schemas.document import DocumentCreate,DocumentReadDetail,DocumentRead,DocumentDownload,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.admin import StockageStats, StockageParType, StockageConsommateur, StockagePoint
-from app.services.extraction import process_upload, is_image
+from app.services.extraction import process_upload, is_image, is_image_type
 from app.models.utilisateurs import Utilisateur
 from app.services import llm_service
 from datetime import date
@@ -605,6 +605,22 @@ def download_version(
     )
 
 
+# Pour une image, le contenu est rempli en differe par la vision (process_upload sort en contenu="").
+# On ne (re)lance la vision que si le contenu manque vraiment : "Regenerer" un resume re-resume le
+# contenu existant, il ne doit pas relancer un appel vision payant a chaque clic.
+def _assurer_contenu(db: Session, version: Version, id_utilisateur: int) -> None:
+    if is_image_type(version.type_fichier) and not version.contenu:
+        image_bytes = (STORAGE_DIR / version.storage_fichier).read_bytes()
+        media_type  = MIME_TYPES[version.type_fichier]
+        version.contenu = llm_service.analyser_image(
+            db=db,
+            id_utilisateur=id_utilisateur,
+            image_bytes=image_bytes,
+            media_type=media_type,
+        )
+        version.etat = "pret"
+
+
 def analyser_version(
     db: Session,
     document_id: int,
@@ -623,11 +639,11 @@ def analyser_version(
     if not version:
         return None
 
-    resume = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
-    version.resume_llm = resume
+    _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
+    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
     db.commit()
     db.refresh(version)
-    return resume
+    return version.resume_llm
 
 
 def analyser_document(db: Session, document_id: int, id_utilisateur: int):
@@ -635,18 +651,15 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int):
     if not document:
         return None
 
-    version = db.query(Version).filter(
-        Version.id_document == document_id
-    ).order_by(Version.numero.desc()).first()
-
+    version = get_latest_version(db=db, document_id=document_id)
     if not version:
         return None
 
-    resume = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
-    version.resume_llm = resume
+    _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
+    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
     db.commit()
     db.refresh(version)
-    return resume
+    return version.resume_llm
 
 def resume_background(document_id: int, id_utilisateur: int):
     db = SessionLocal()
@@ -682,23 +695,17 @@ def analyser_image_background(document_id: int, id_utilisateur: int):
         if version is None:
             return
 
-        image_bytes = (STORAGE_DIR / version.storage_fichier).read_bytes()
-        media_type = MIME_TYPES[version.type_fichier]
-        description = llm_service.analyser_image(
-            db=db,
-            id_utilisateur=id_utilisateur,
-            image_bytes=image_bytes,
-            media_type=media_type,
+        _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
+        version.resume_llm = llm_service.generer_resume(
+            db=db, id_utilisateur=id_utilisateur, contenu=version.contenu,
         )
-        version.contenu = description
-        version.etat = "pret"
         db.commit()
 
         log_action(
             db=db,
             niveau="ok",
             action="document.analyse.auto",
-            message=f"Analyse vision generee pour le document #{document_id}",
+            message=f"Analyse vision + resume generes pour le document #{document_id}",
             contexte={"id_document": document_id},
             id_utilisateur=id_utilisateur,
         )

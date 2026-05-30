@@ -5,6 +5,7 @@ import os
 from fastapi import HTTPException
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+IMAGE_TYPES = {"jpg", "jpeg", "png"}
 
 
 #fonction qui extrait le text dun pdf
@@ -26,6 +27,10 @@ def extract_docx(file_bytes: bytes) -> str:
 
 def is_image(filename: str) -> bool:
     return os.path.splitext(filename)[1].lower() in IMAGE_EXTENSIONS
+
+
+def is_image_type(type_fichier: str) -> bool:
+    return type_fichier.lower() in IMAGE_TYPES
 
 
 # classe + valide le fichier uploade et renvoie (contenu, etat).
