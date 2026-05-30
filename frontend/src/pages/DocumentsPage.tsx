@@ -15,7 +15,6 @@ import type { Categorie } from "../types"
 import AppShell from "../components/AppShell"
 import SubBar from "../components/SubBar"
 import UploadModal from "../components/UploadModal"
-import NewCategorieModal from "../components/NewCategorieModal"
 import DocumentViewer from "../components/DocumentViewer"
 import SearchFiltersPanel from "../components/SearchFilters"
 import { useDeleteDocument } from "../hooks/useDeleteDocument"
@@ -28,7 +27,6 @@ type Vue = 'liste' | 'grille'
 
 function DocumentsPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
-  const [newFolderOpen, setNewFolderOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selDocs, setSelDocs] = useState<Set<number>>(new Set())
   const [selFolders, setSelFolders] = useState<Set<number>>(new Set())
@@ -184,7 +182,6 @@ function DocumentsPage() {
     },
   }
 
-  const dossierCourant = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null
   const peuplé = items.length > 0 || subFolders.length > 0
 
   return (
@@ -235,12 +232,6 @@ function DocumentsPage() {
                 <span className="material-symbols-outlined text-[16px]">grid_view</span> Grille
               </button>
             </div>
-            <button onClick={() => setNewFolderOpen(true)} className="btn-ghost inline-flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]">create_new_folder</span> Nouveau dossier
-            </button>
-            <button onClick={() => setIsUploadOpen(true)} className="btn-primary flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]" style={{ color: '#0b0b0c' }}>upload</span> Importer
-            </button>
           </div>
         </SubBar>
 
@@ -267,7 +258,11 @@ function DocumentsPage() {
                     ? `Aucun résultat pour « ${searchQuery} ».`
                     : filterCategorie != null ? 'Aucun document dans ce dossier.' : 'Votre drive est vide.'}
                 </p>
-                {!isSearchMode && filterCategorie == null && <p className="section-label">Cliquez sur "Importer" pour commencer.</p>}
+                {!isSearchMode && (
+                  <button onClick={() => setIsUploadOpen(true)} className="btn-primary mt-2 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]" style={{ color: '#0b0b0c' }}>upload</span> Importer un document
+                  </button>
+                )}
               </div>
             )}
 
@@ -360,14 +355,7 @@ function DocumentsPage() {
         />
       )}
 
-      {isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} />}
-      {newFolderOpen && (
-        <NewCategorieModal
-          parentId={filterCategorie}
-          parentNom={dossierCourant?.nom ?? null}
-          onClose={() => setNewFolderOpen(false)}
-        />
-      )}
+      {isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} defaultCategorie={filterCategorie} />}
     </AppShell>
   )
 }

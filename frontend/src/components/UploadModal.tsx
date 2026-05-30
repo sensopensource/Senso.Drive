@@ -8,6 +8,7 @@ import TypeIcon from "./TypeIcon"
 
 type Props = {
   onClose: () => void
+  defaultCategorie?: number | null
 }
 
 type Statut = 'attente' | 'envoi' | 'importe' | 'echec' | 'refuse'
@@ -42,13 +43,13 @@ function sansExtension(nom: string): string {
   return nom.replace(/\.[^.]+$/, '')
 }
 
-function UploadModal({ onClose }: Props) {
+function UploadModal({ onClose, defaultCategorie = null }: Props) {
   const { categories } = useCategories()
   const { uploadDocumentAsync } = useUploadDocument()
   const { showToast } = useToast()
 
   const [entrees, setEntrees] = useState<Entree[]>([])
-  const [idCategorie, setIdCategorie] = useState<number | null>(null)
+  const [idCategorie, setIdCategorie] = useState<number | null>(defaultCategorie)
   const [dragOver, setDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)

@@ -255,6 +255,8 @@ function AppSidebar() {
   const [confirmDelete, setConfirmDelete] = useState<CategorieNode | null>(null)
   const [rootDragOver, setRootDragOver] = useState(false)
   const [stockageOuvert, setStockageOuvert] = useState(false)
+  const [nouveauOuvert, setNouveauOuvert] = useState(false)
+  const nouveauRef = useRef<HTMLDivElement>(null)
   // Rubrique Admin repliable : ouverte d'office si on est deja sur une page /admin
   const [adminOuvert, setAdminOuvert] = useState(() => location.pathname.startsWith('/admin'))
 
@@ -267,7 +269,30 @@ function AppSidebar() {
     return v ? Number(v) : null
   })()
 
-  const handleImport = () => navigate('/documents?upload=1')
+  // Menu "+ Nouveau" : unique point d'entree de creation, context-aware
+  // (cree dans le dossier courant = ?cat, racine sinon).
+  const selectedCatNom = categories.find(c => c.id === selectedCatId)?.nom ?? null
+
+  const handleNouveauDocument = () => {
+    setNouveauOuvert(false)
+    navigate(selectedCatId ? `/documents?cat=${selectedCatId}&upload=1` : '/documents?upload=1')
+  }
+
+  const handleNouveauDossier = () => {
+    setNouveauOuvert(false)
+    setNewCatTarget({ parentId: selectedCatId, parentNom: selectedCatNom })
+  }
+
+  useEffect(() => {
+    if (!nouveauOuvert) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (nouveauRef.current && !nouveauRef.current.contains(e.target as Node)) {
+        setNouveauOuvert(false)
+      }
+    }
+    window.document.addEventListener('mousedown', handleClickOutside)
+    return () => window.document.removeEventListener('mousedown', handleClickOutside)
+  }, [nouveauOuvert])
 
   const handleSelect = (id: number) => navigate(`/documents?cat=${id}`)
 
@@ -332,22 +357,42 @@ function AppSidebar() {
   return (
     <aside className="w-[280px] shrink-0 hair-r bg-panel flex flex-col">
 
-      {/* Action block */}
+      {/* Action block — point d'entree unique de creation */}
       <div className="p-4 hair-b">
-        <button
-          onClick={handleImport}
-          className="w-full flex items-center gap-2.5 px-4 h-11 bg-bright text-ink text-[13px] font-semibold hover:bg-white transition-colors"
-        >
-          <span className="material-symbols-outlined text-[18px]" style={{ color: '#0b0b0c' }}>upload</span>
-          <span className="flex-1 text-left">Importer un document</span>
-        </button>
-        <button
-          onClick={() => setNewCatTarget({ parentId: null, parentNom: null })}
-          className="w-full mt-2 flex items-center gap-2 px-3 h-9 hair text-[12px] text-soft hover:text-bright hover:bg-elev transition-colors"
-        >
-          <span className="material-symbols-outlined text-[15px]">add</span>
-          <span className="flex-1 text-left">Nouveau dossier</span>
-        </button>
+        <div className="relative" ref={nouveauRef}>
+          <button
+            onClick={() => setNouveauOuvert(o => !o)}
+            className="w-full flex items-center gap-2.5 px-4 h-12 bg-bright text-ink text-[13.5px] font-semibold hover:bg-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]" style={{ color: '#0b0b0c' }}>add</span>
+            <span className="flex-1 text-left">Nouveau</span>
+            <span
+              className={`material-symbols-outlined text-[18px] transition-transform ${nouveauOuvert ? 'rotate-180' : ''}`}
+              style={{ color: '#0b0b0c' }}
+            >
+              expand_more
+            </span>
+          </button>
+
+          {nouveauOuvert && (
+            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-elev hair">
+              <button
+                onClick={handleNouveauDocument}
+                className="w-full flex items-center gap-2.5 px-3.5 h-10 hair-b text-[12.5px] text-soft hover:text-bright hover:bg-panel transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px] text-mute">upload_file</span>
+                <span className="flex-1 text-left">Importer un document</span>
+              </button>
+              <button
+                onClick={handleNouveauDossier}
+                className="w-full flex items-center gap-2.5 px-3.5 h-10 text-[12.5px] text-soft hover:text-bright hover:bg-panel transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px] text-mute">create_new_folder</span>
+                <span className="flex-1 text-left">Nouveau dossier</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Nav */}
