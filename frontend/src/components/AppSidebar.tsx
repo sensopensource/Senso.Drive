@@ -482,11 +482,10 @@ function AppSidebar() {
             <button
               type="button"
               onClick={() => setAdminOuvert(o => !o)}
-              className="section-label w-full px-2 mb-1 flex items-center gap-1.5 hover:text-soft transition-colors"
+              className="section-label w-full px-2 mb-1 flex items-center justify-between hover:text-soft transition-colors"
             >
-              <span className="material-symbols-outlined text-[13px] text-type-md">{adminOuvert ? 'expand_more' : 'chevron_right'}</span>
               <span className="text-type-md">Admin</span>
-              <span className="material-symbols-outlined text-[11px] text-type-md ml-auto">shield</span>
+              <span className="material-symbols-outlined text-[13px] text-type-md">{adminOuvert ? 'expand_more' : 'chevron_right'}</span>
             </button>
 
             {adminOuvert && (
