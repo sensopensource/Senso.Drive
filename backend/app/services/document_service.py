@@ -644,6 +644,15 @@ def analyser_version(
     version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu, interactif=interactif)
     db.commit()
     db.refresh(version)
+    log_action(
+            db=db,
+            niveau="ok",
+            action="document.analyse.manual",
+            message=f"Analyse + resume (version) generes pour le document #{document_id}",
+            contexte={"id_document": document_id},
+            id_utilisateur=id_utilisateur,
+        )
+
     return version.resume_llm
 
 
@@ -660,6 +669,15 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int, intera
     version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu, interactif=interactif)
     db.commit()
     db.refresh(version)
+    if interactif:
+      log_action(
+              db=db,
+              niveau="ok",
+              action="document.analyse.manual",
+              message=f"Analyse + resume generes pour le document #{document_id}",
+              contexte={"id_document": document_id},
+              id_utilisateur=id_utilisateur,
+          )
     return version.resume_llm
 
 def resume_background(document_id: int, id_utilisateur: int):
