@@ -401,7 +401,8 @@ def analyser_document(document_id: int,
 
     resume = document_service.analyser_document(db=db,
                                                 document_id=document_id,
-                                                id_utilisateur=current_user.id)
+                                                id_utilisateur=current_user.id,
+                                                interactif=True)
     if resume is None:
         raise HTTPException(status_code=404, detail="Document ou version introuvable")
     return {"resume_llm": resume}
@@ -451,7 +452,8 @@ def analyser_version(document_id: int,
     resume = document_service.analyser_version(db=db,
                                                document_id=document_id,
                                                numero=numero,
-                                               id_utilisateur=current_user.id)
+                                               id_utilisateur=current_user.id,
+                                               interactif=True)
     if resume is None:
         raise HTTPException(status_code=404, detail="Version introuvable")
     return {"resume_llm": resume}

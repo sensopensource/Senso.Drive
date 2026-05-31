@@ -63,11 +63,12 @@ def analyser_image(db: Session, id_utilisateur: int, image_bytes: bytes, media_t
         raise
 
 
-def generer_resume(db: Session, id_utilisateur: int, contenu: str) -> str:
+def generer_resume(db: Session, id_utilisateur: int, contenu: str, interactif: bool = False) -> str:
+    if interactif:
+        return _resume_anthropic(db=db, id_utilisateur=id_utilisateur, contenu=contenu)
     if LLM_RESUME_BACKEND == "ollama":
         return _resume_ollama(db=db, id_utilisateur=id_utilisateur, contenu=contenu)
-    else:
-        return _resume_anthropic(db=db, id_utilisateur=id_utilisateur, contenu=contenu)
+    return _resume_anthropic(db=db, id_utilisateur=id_utilisateur, contenu=contenu)
 
 
 def _resume_ollama(db: Session, id_utilisateur: int, contenu: str) -> str:

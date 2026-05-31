@@ -626,6 +626,7 @@ def analyser_version(
     document_id: int,
     numero: int,
     id_utilisateur: int,
+    interactif: bool = False,
 ) -> str | None:
     document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
     if not document:
@@ -640,13 +641,13 @@ def analyser_version(
         return None
 
     _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
-    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
+    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu, interactif=interactif)
     db.commit()
     db.refresh(version)
     return version.resume_llm
 
 
-def analyser_document(db: Session, document_id: int, id_utilisateur: int):
+def analyser_document(db: Session, document_id: int, id_utilisateur: int, interactif: bool = False):
     document = get_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
     if not document:
         return None
@@ -656,7 +657,7 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int):
         return None
 
     _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
-    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu)
+    version.resume_llm = llm_service.generer_resume(db=db, id_utilisateur=id_utilisateur, contenu=version.contenu, interactif=interactif)
     db.commit()
     db.refresh(version)
     return version.resume_llm
