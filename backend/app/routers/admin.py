@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, require_admin_stream
 from app.models.utilisateurs import Utilisateur
 from app.schemas.log import LogListResponse
 from app.schemas.utilisateur import UtilisateurAdminRow, UtilisateurAdminDetail
@@ -47,7 +47,7 @@ def list_logs(
 
 
 @router.get("/logs/stream")
-async def stream_logs(_admin: Utilisateur = Depends(require_admin)):
+async def stream_logs(_admin: Utilisateur = Depends(require_admin_stream)):
     async def event_generator():
         q = broadcaster.s_abonner()
         try:
