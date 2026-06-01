@@ -173,6 +173,60 @@ export type StockageUtilisateur = {
     quota_octets: number
 }
 
+export type StockageParType = {
+    type_fichier: string
+    taille_octets: number
+}
+
+export type StockageConsommateur = {
+    id_utilisateur: number
+    nom: string
+    taille_octets: number
+    nb_documents: number
+}
+
+export type StockagePoint = {
+    jour: string  // date ISO
+    taille_octets: number
+    taille_cumulee: number
+}
+
+export type StockageStats = {
+    total_octets: number
+    par_type: StockageParType[]
+    top_consommateurs: StockageConsommateur[]
+    serie_temporelle: StockagePoint[]
+}
+
+export type SanteParSource = {
+    source: string
+    nb_appels: number
+    nb_erreurs: number
+    taux_erreur: number
+    latence_moyenne_ms: number
+    latence_p95_ms: number
+    latence_p50_ms: number
+}
+
+export type SanteIncident = {
+    source: string
+    modele: string
+    statut: string
+    message_erreur: string | null
+    latence_ms: number
+    cree_le: string
+}
+
+export type SanteStats = {
+    etat_global: string  // "vert" | "orange" | "rouge"
+    nb_appels: number
+    nb_erreurs: number
+    taux_erreur: number
+    latence_p95_ms: number
+    par_source: SanteParSource[]
+    derniers_incidents: SanteIncident[]
+}
+
 export type DashboardUtilisateur = {
     documents_total: number
     docs_par_type: Record<string, number>

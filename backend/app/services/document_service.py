@@ -762,7 +762,9 @@ def get_stockage_stats(db: Session, jours: int | None = None) -> StockageStats:
     for type_fichier, taille in lignes_type:
         par_type.append(StockageParType(type_fichier=type_fichier, taille_octets=int(taille)))
 
-    lignes_users = (db.query(Utilisateur.id, Utilisateur.nom, func.sum(Version.taille_octets))
+    lignes_users = (db.query(Utilisateur.id, Utilisateur.nom,
+                             func.sum(Version.taille_octets),
+                             func.count(func.distinct(Document.id)))
                     .join(Document, Document.id_utilisateur == Utilisateur.id)
                     .join(Version, Version.id_document == Document.id)
                     .group_by(Utilisateur.id, Utilisateur.nom)
@@ -770,10 +772,11 @@ def get_stockage_stats(db: Session, jours: int | None = None) -> StockageStats:
                     .all())
 
     top_consommateurs = []
-    for id_user, nom, taille in lignes_users:
+    for id_user, nom, taille, nb_documents in lignes_users:
         top_consommateurs.append(StockageConsommateur(id_utilisateur=id_user,
                                                        nom=nom,
-                                                       taille_octets=int(taille)))
+                                                       taille_octets=int(taille),
+                                                       nb_documents=nb_documents))
 
     requete_jours = db.query(cast(Version.date_upload, Date), func.sum(Version.taille_octets))
     if jours is not None:

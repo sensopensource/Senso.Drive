@@ -49,6 +49,7 @@ class StockageConsommateur(BaseModel):
     id_utilisateur: int
     nom: str
     taille_octets: int
+    nb_documents: int
 
 
 class StockagePoint(BaseModel):
@@ -71,8 +72,8 @@ class SanteParSource(BaseModel):
     taux_erreur: float
     latence_moyenne_ms: float
     latence_p95_ms: float
-
-
+    latence_p50_ms: float 
+  
 class SanteIncident(BaseModel):
     source: str
     modele: str
@@ -87,6 +88,7 @@ class SanteStats(BaseModel):
     nb_appels: int
     nb_erreurs: int
     taux_erreur: float
+    latence_p95_ms: float
     par_source: list[SanteParSource]
     derniers_incidents: list[SanteIncident]
 

@@ -144,7 +144,8 @@ def get_sante_stats(db: Session, jours: int | None = None) -> SanteStats:
                               func.count(ConsommationTokens.id),
                               func.count(ConsommationTokens.id).filter(ConsommationTokens.statut != "ok"),
                               func.avg(ConsommationTokens.latence_ms),
-                              func.percentile_cont(0.95).within_group(ConsommationTokens.latence_ms.asc()))
+                              func.percentile_cont(0.95).within_group(ConsommationTokens.latence_ms.asc()),
+                              func.percentile_cont(0.5).within_group(ConsommationTokens.latence_ms.asc()))
                      .filter(*conditions)
                      .group_by(ConsommationTokens.source)
                      .all())
@@ -153,7 +154,7 @@ def get_sante_stats(db: Session, jours: int | None = None) -> SanteStats:
     total_appels = 0
     total_erreurs = 0
 
-    for source, nb_appels, nb_erreurs, latence_moyenne, latence_p95 in lignes_source:
+    for source, nb_appels, nb_erreurs, latence_moyenne, latence_p95 , latence_p50 in lignes_source:
         if nb_appels > 0:
             taux_erreur = nb_erreurs / nb_appels
         else:
@@ -164,7 +165,8 @@ def get_sante_stats(db: Session, jours: int | None = None) -> SanteStats:
                                           nb_erreurs=nb_erreurs,
                                           taux_erreur=taux_erreur,
                                           latence_moyenne_ms=float(latence_moyenne),
-                                          latence_p95_ms=float(latence_p95)))
+                                          latence_p95_ms=float(latence_p95),
+                                          latence_p50_ms=float(latence_p50)))
         total_appels += nb_appels
         total_erreurs += nb_erreurs
 
@@ -179,6 +181,12 @@ def get_sante_stats(db: Session, jours: int | None = None) -> SanteStats:
         etat_global = "orange"
     else:
         etat_global = "rouge"
+
+    latence_p95_globale = (db.query(func.percentile_cont(0.95).within_group(ConsommationTokens.latence_ms.asc()))
+                           .filter(*conditions)
+                           .scalar())
+    if latence_p95_globale is None:
+        latence_p95_globale = 0.0
 
     incidents = (db.query(ConsommationTokens)
                  .filter(*conditions)
@@ -201,6 +209,7 @@ def get_sante_stats(db: Session, jours: int | None = None) -> SanteStats:
         nb_appels=total_appels,
         nb_erreurs=total_erreurs,
         taux_erreur=taux_erreur_global,
+        latence_p95_ms=float(latence_p95_globale),
         par_source=par_source,
         derniers_incidents=derniers_incidents,
     )

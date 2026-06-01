@@ -559,8 +559,8 @@ function AppSidebar() {
               { label: 'Utilisateurs',   icon: 'group',           to: '/admin/users' as string | null },
               { label: 'Logs',           icon: 'terminal',        to: '/admin/logs' as string | null },
               { label: 'Tokens & coûts', icon: 'monetization_on', to: '/admin/tokens' as string | null },
-              { label: 'Stockage',       icon: 'database',        to: null as string | null },
-              { label: 'Santé LLM',      icon: 'monitor_heart',   to: null as string | null },
+              { label: 'Stockage',       icon: 'database',        to: '/admin/stockage' as string | null },
+              { label: 'Santé LLM',      icon: 'monitor_heart',   to: '/admin/sante' as string | null },
             ].map(lien => (
               lien.to ? (
                 <NavLink
