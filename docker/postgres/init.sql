@@ -55,7 +55,7 @@ CREATE TABLE versions(
     type_fichier TEXT NOT NULL,
     search_vector tsvector,
     resume_LLM TEXT,
-    etat TEXT NOT NULL DEFAULT 'pret' CHECK (etat IN ('a_analyser', 'pret', 'echec')),
+    etat TEXT NOT NULL DEFAULT 'pret' CHECK (etat IN ('a_analyser', 'a_resumer', 'en_cours', 'pret', 'echec')),
     date_upload TIMESTAMPTZ DEFAULT NOW(),
     id_document int REFERENCES documents(id) ON DELETE CASCADE,
     taille_octets bigint NOT NULL
