@@ -1,7 +1,6 @@
 import os
 import uuid
 from pathlib import Path
-
 from sqlalchemy.orm import Session,selectinload
 from sqlalchemy import func,or_,cast,Date
 from datetime import datetime, timezone, timedelta
@@ -18,7 +17,7 @@ from datetime import date
 from app.models.tags import Tag
 from app.database import SessionLocal
 from app.services.log_service import log_action
-from fastapi import HTTPException
+from fastapi import HTTPException 
 
 
 STORAGE_DIR = Path(os.getenv("STORAGE_DIR", "/app/storage/documents"))
@@ -108,6 +107,90 @@ def get_latest_version(db: Session, document_id: int) -> Version | None:
         .first()
     )
 
+def get_next(db: Session) -> tuple[int,int] | None:
+    version = (
+        db.query(Version)
+        .join(Document,Document.id == Version.id_document)
+        .filter(
+            Version.etat.in_(("a_resumer","a_analyser")),
+            Document.deleted_at.is_(None),
+        )
+        .order_by(Version.id)
+        .with_for_update(skip_locked=True,of=Version)
+        .first()
+    )
+    if version is None:
+        return None
+    version.etat = "en_cours"
+    id_utilisateur = (
+        db.query(Document.id_utilisateur)
+        .filter(Document.id == version.id_document)
+        .scalar()
+    )
+    db.commit()
+    return version.id_document,id_utilisateur
+
+def traiter(document_id: int, id_utilisateur: int):
+    db = SessionLocal()
+    try:
+        version = get_latest_version(db=db, document_id=document_id)
+        if version is None:
+            return
+        type_fichier = version.type_fichier
+        storage      = version.storage_fichier
+        contenu      = version.contenu
+    finally:
+        db.close()
+
+    est_image = is_image_type(type_fichier)
+    if est_image:
+        action  = "document.analyse.auto"
+        message = f"Analyse vision + resume generes pour le document #{document_id}"
+        source  = "vision"
+    else:
+        action  = "document.resume.auto"
+        message = f"Resume genere pour le document #{document_id}"
+        source  = "resume"
+
+    db = SessionLocal()
+    
+    try:
+        if est_image and not contenu:
+            image_bytes = (STORAGE_DIR / storage).read_bytes()
+            media_type  = MIME_TYPES[type_fichier]
+            contenu = llm_service.analyser_image(
+                db=db, id_utilisateur=id_utilisateur,
+                image_bytes=image_bytes, media_type=media_type,
+            )
+
+        resume = llm_service.generer_resume(
+            db=db, id_utilisateur=id_utilisateur, contenu=contenu,
+        )
+
+        
+        version = get_latest_version(db=db, document_id=document_id)
+        version.contenu    = contenu
+        version.resume_llm = resume
+        version.etat       = "pret"
+        db.commit()
+        
+        
+        log_action(db=db, niveau="ok", action=action, message=message,
+           contexte={"id_document": document_id},
+           id_utilisateur=id_utilisateur)
+
+    except Exception as e:
+        version = get_latest_version(db=db, document_id=document_id)
+        if version is not None:
+            version.etat = "echec"
+            db.commit()
+        log_action(db=db, niveau="err", action="llm.error",
+           message=f"Echec {source} du document #{document_id} : {e}",
+           contexte={"source": source, "id_document": document_id,
+                     "erreur": str(e)},
+           id_utilisateur=id_utilisateur)
+    finally:
+        db.close()
 
 def list_documents(db: Session,
                    id_utilisateur: int,
@@ -366,7 +449,7 @@ def list_auteurs(db: Session, id_utilisateur: int) -> list[str]:
         .filter(Document.auteur.is_not(None))
         .distinct()
         .order_by(Document.auteur)
-        .all()
+        .all() 
     )
     return [row[0] for row in rows]
 
@@ -679,72 +762,6 @@ def analyser_document(db: Session, document_id: int, id_utilisateur: int, intera
               id_utilisateur=id_utilisateur,
           )
     return version.resume_llm
-
-def resume_background(document_id: int, id_utilisateur: int):
-    db = SessionLocal()
-    try:
-        analyser_document(db=db, document_id=document_id, id_utilisateur=id_utilisateur)
-        log_action(
-            db=db,
-            niveau="ok",
-            action="document.resume.auto",
-            message=f"Resume genere pour le document #{document_id}",
-            contexte={"id_document": document_id},
-            id_utilisateur=id_utilisateur,
-        )
-    except Exception as e:
-        log_action(
-            db=db,
-            niveau="err",
-            action="llm.error",
-            message=f"Echec resume auto du document #{document_id} : {e}",
-            contexte={"source":      "resume",
-                      "id_document": document_id,
-                      "erreur":      str(e)},
-            id_utilisateur=id_utilisateur,
-        )
-    finally:
-        db.close()
-
-
-def analyser_image_background(document_id: int, id_utilisateur: int):
-    db = SessionLocal()
-    try:
-        version = get_latest_version(db=db, document_id=document_id)
-        if version is None:
-            return
-
-        _assurer_contenu(db=db, version=version, id_utilisateur=id_utilisateur)
-        version.resume_llm = llm_service.generer_resume(
-            db=db, id_utilisateur=id_utilisateur, contenu=version.contenu,
-        )
-        db.commit()
-
-        log_action(
-            db=db,
-            niveau="ok",
-            action="document.analyse.auto",
-            message=f"Analyse vision + resume generes pour le document #{document_id}",
-            contexte={"id_document": document_id},
-            id_utilisateur=id_utilisateur,
-        )
-    except Exception as e:
-        version = get_latest_version(db=db, document_id=document_id)
-        if version is not None:
-            version.etat = "echec"
-            db.commit()
-        log_action(
-            db=db,
-            niveau="err",
-            action="llm.error",
-            message=f"Echec analyse vision du document #{document_id} : {e}",
-            contexte={"source":      "vision",
-                      "id_document": document_id,
-                      "erreur":      str(e)},
-            id_utilisateur=id_utilisateur,
-        )
-    finally:
-        db.close()
 
 
 def get_stockage_stats(db: Session, jours: int | None = None) -> StockageStats:

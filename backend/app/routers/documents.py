@@ -1,10 +1,9 @@
-from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Depends, Form, Query, Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentReadDetail,DocumentPatch,DocumentSearchResult,DocumentListResponse,VersionRead
 from app.schemas.tag import DocumentTagsUpdate
 from app.services import document_service, categorie_service, tag_service, log_service,utilisateur_service
-from app.services.extraction import is_image
 from app.models.categories import Categorie
 from fastapi.responses import FileResponse
 from app.core.dependencies import require_user
@@ -23,7 +22,6 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 # lutilisateur envoie une requette HTTP avec ContentType multipart pr le pdf,cest pour ca qu'on passe par File() et Form()
 @router.post("/", response_model=DocumentRead,)
 async def upload_document(
-    background_tasks: BackgroundTasks,
     request: Request,
     file: UploadFile = File(...),
     titre: str | None = Form(None),
@@ -71,14 +69,6 @@ async def upload_document(
         id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
-    if is_image(file.filename):
-        background_tasks.add_task(document_service.analyser_image_background,
-                                  document.id,
-                                  current_user.id)
-    else:
-        background_tasks.add_task(document_service.resume_background,
-                                  document.id,
-                                  current_user.id)
     return document
 
 
@@ -312,7 +302,6 @@ def apercu_document(document_id: int,
 
 @router.post("/{document_id}/versions", response_model=DocumentRead)
 async def upload_nouvelle_version(
-    background_tasks: BackgroundTasks,
     document_id: int,
     request: Request,
     file: UploadFile = File(...),
@@ -339,14 +328,6 @@ async def upload_nouvelle_version(
         id_utilisateur=current_user.id,
         adresse_ip=_client_ip(request),
     )
-    if is_image(file.filename):
-        background_tasks.add_task(document_service.analyser_image_background,
-                                  document.id,
-                                  current_user.id)
-    else:
-        background_tasks.add_task(document_service.resume_background,
-                                  document.id,
-                                  current_user.id)
     return document
 
 

@@ -33,16 +33,14 @@ def is_image_type(type_fichier: str) -> bool:
     return type_fichier.lower() in IMAGE_TYPES
 
 
-# classe + valide le fichier uploade et renvoie (contenu, etat).
-# image -> pas de texte, l'analyse vision se fera en tache de fond (etat 'a_analyser').
 def process_upload(filename: str, file_bytes: bytes) -> tuple[str, str]:
     extension = os.path.splitext(filename)[1].lower()
     if extension == ".pdf":
-        return extract_pdf(file_bytes), "pret"
+        return extract_pdf(file_bytes), "a_resumer"
     elif extension == ".docx":
-        return extract_docx(file_bytes), "pret"
+        return extract_docx(file_bytes), "a_resumer"
     elif extension in (".txt", ".md"):
-        return file_bytes.decode("utf-8", errors="replace"), "pret"
+        return file_bytes.decode("utf-8", errors="replace"), "a_resumer"
     elif extension in IMAGE_EXTENSIONS:
         return "", "a_analyser"
     else:
